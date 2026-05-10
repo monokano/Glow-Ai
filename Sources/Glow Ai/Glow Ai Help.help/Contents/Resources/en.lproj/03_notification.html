@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="AppleTitle" content="Notification Window">
+<title>Notification Window</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<p class="breadcrumb"><a href="index.html">Glow Ai Help</a> › Notification Window</p>
+<h1>Notification Window</h1>
+
+<p>The Notification Window appears when no matching app version is found, or when the file requires manual review before opening.</p>
+
+<h2>File Information</h2>
+
+<h3>Icon</h3>
+<p>Shows the icon of the dropped file. A warning badge may appear above the icon, and a kind badge may appear to its left.</p>
+
+<h3>Badge</h3>
+<p>Displays a warning message or file type label when needed.</p>
+
+<h3>Filename</h3>
+<p>The name of the dropped file.</p>
+
+<h3>Created</h3>
+<p>The Illustrator version that created the file, as read from the file's internal data, displayed as an app name.<br>
+Example: Illustrator 2024 (28.7.10)</p>
+
+<h3>Compat.</h3>
+<p>The compatibility version (the version specified in the save options). Shown in red when it is lower than the default. For PDFs that retain Illustrator editing capabilities, "← Invalid" is shown in red because the compatibility setting does not actually apply to that format.<br>
+Example: Illustrator 2020 (24.0)</p>
+
+<h2>App List</h2>
+<p>Lists all versions of Illustrator installed on your Mac. When an EPS file was created in Photoshop, Photoshop appears in the list instead.</p>
+<dl>
+  <dt>Blue dot (●)</dt>
+  <dd>Indicates the app is currently running.</dd>
+
+  <dt>App name</dt>
+  <dd>The name of the installed app. Beta and Prerelease builds are always greyed out to prevent accidental use in production.</dd>
+</dl>
+
+<h3>Opening a File from the List</h3>
+<p>Double-click a row to open the file with that version of Illustrator. Alternatively, select a row and click the "Open" button. Double-clicking a greyed-out row shows an "Open" menu item that lets you force-open the file.</p>
+
+<h2>Buttons</h2>
+<dl>
+  <dt>Open</dt>
+  <dd>Opens the file with the selected app.</dd>
+  <dt>Cancel</dt>
+  <dd>Closes the window without opening the file.</dd>
+  <dt>Quit</dt>
+  <dd>Quits the currently running Illustrator. The blue dot disappears once Illustrator has actually terminated.</dd>
+</dl>
+
+<h2>Checkboxes</h2>
+<dl>
+  <dt>Allow opening with compatible version</dt>
+  <dd>When checked, the compatibility version of Illustrator becomes available for opening the file. When unchecked, the compatibility version row is greyed out.</dd>
+
+  <dt>Allow opening with a newer version</dt>
+  <dd>When checked, versions of Illustrator newer than the creation version become available. When unchecked, newer version rows are greyed out.</dd>
+</dl>
+
+<div class="note">
+  <strong>Tip</strong>
+  Click "More Info" in the top-right corner to open the <a href="04_detail.html">Detail Window</a>, where you can inspect detailed version detection data.
+</div>
+</body>
+</html>

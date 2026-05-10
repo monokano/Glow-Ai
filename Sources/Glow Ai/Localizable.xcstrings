@@ -1,0 +1,794 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    " ← Ignored" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " ← 無効"
+          }
+        }
+      }
+    },
+    "Adobe Illustrator format (.ai)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adobe Illustrator 形式 (.ai)"
+          }
+        }
+      }
+    },
+    "Allow opening in compatible version" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互換バージョンで開くのを許可する"
+          }
+        }
+      }
+    },
+    "Allow opening in higher version" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上位バージョンで開くのを許可する"
+          }
+        }
+      }
+    },
+    "Always show notification window (do not open automatically)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "常に通知ウインドウを表示する（自動で開かない）"
+          }
+        }
+      }
+    },
+    "Another Illustrator.app is already running" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another Illustrator.app \nis already running"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "別バージョンの Illustrator.app が\n起動しています"
+          }
+        }
+      }
+    },
+    "Application" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリ"
+          }
+        }
+      }
+    },
+    "Associate file types on launch (.ai / .ait / .eps)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動時に関連付けをする（.ai / .ait / .eps）"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル"
+          }
+        }
+      }
+    },
+    "Change Log" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新履歴"
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "閉じる"
+          }
+        }
+      }
+    },
+    "Compat." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互換"
+          }
+        }
+      }
+    },
+    "Compat. detection OFF" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互換バージョン検出OFF"
+          }
+        }
+      }
+    },
+    "Compatible version has been downgraded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compatible version \nhas been downgraded"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互換バージョンが\n下げられています"
+          }
+        }
+      }
+    },
+    "Continuing will launch multiple Illustrator instances." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このまま続行すると、複数の Illustrator が起動する状態になります。"
+          }
+        }
+      }
+    },
+    "Created" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "作成"
+          }
+        }
+      }
+    },
+    "Danger! Illustrator CC 2017 v%@ is installed" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "危険！Illustrator CC 2017 v%@ がインストールされています"
+          }
+        }
+      }
+    },
+    "Danger! Illustrator CC 2018 v%@ is installed" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "危険！Illustrator CC 2018 v%@ がインストールされています"
+          }
+        }
+      }
+    },
+    "Danger! Illustrator CC 2021 v%@ is installed" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "危険！Illustrator CC 2021 v%@ がインストールされています"
+          }
+        }
+      }
+    },
+    "Detect" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検出"
+          }
+        }
+      }
+    },
+    "Detect (no limit)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "制限なしで検出"
+          }
+        }
+      }
+    },
+    "Do not detect EPS compatible version (v9+)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EPS の互換バージョンを検出しない (v9 以降)"
+          }
+        }
+      }
+    },
+    "Do not detect XMP: CreatorTool" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "XMP: CreatorTool を検出しない"
+          }
+        }
+      }
+    },
+    "EPS compat. detection OFF" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EPS 互換バージョン検出オフ"
+          }
+        }
+      }
+    },
+    "Failed to import icon files from Illustrator %@" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustrator %@ からアイコンファイルの取り込みができませんでした"
+          }
+        }
+      }
+    },
+    "Filename" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイル名"
+          }
+        }
+      }
+    },
+    "Glow Ai - Notification" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Ai - 通知"
+          }
+        }
+      }
+    },
+    "Glow Ai Help" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Ai ヘルプ"
+          }
+        }
+      }
+    },
+    "Glow Ai Preferences" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Ai 設定"
+          }
+        }
+      }
+    },
+    "Icon files imported from Illustrator %@" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustrator %@ からアイコンファイルを取り込みました"
+          }
+        }
+      }
+    },
+    "Ignore warning" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無視して開く"
+          }
+        }
+      }
+    },
+    "Illustrator EPS format (.eps)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustrator EPS 形式 (.eps)"
+          }
+        }
+      }
+    },
+    "Illustrator Template format (.ait)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustrator Template 形式 (.ait)"
+          }
+        }
+      }
+    },
+    "Info" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "情報"
+          }
+        }
+      }
+    },
+    "It is recommended to keep only one Illustrator running." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動する Illustrator はなるべくひとつだけにしておきましょう。"
+          }
+        }
+      }
+    },
+    "Kind" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "種類"
+          }
+        }
+      }
+    },
+    "Limit read size (%lld sec)" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "読込サイズを制限する（%lld 秒）"
+          }
+        }
+      }
+    },
+    "More Info" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詳細情報"
+          }
+        }
+      }
+    },
+    "No Illustrator.app with matching major version" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Illustrator.app \nwith matching major version"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同じメジャーバージョンの\nIllustrator.app がありません"
+          }
+        }
+      }
+    },
+    "No Illustrator.app with matching minor version" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Illustrator.app \nwith matching minor version"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マイナーバージョンが一致している\nIllustrator.app がありません"
+          }
+        }
+      }
+    },
+    "Not an Illustrator file" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustrator ファイルではありません"
+          }
+        }
+      }
+    },
+    "Not Boot" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動しない"
+          }
+        }
+      }
+    },
+    "Open" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開く"
+          }
+        }
+      }
+    },
+    "Open with %@" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ で開く"
+          }
+        }
+      }
+    },
+    "Open…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開く…"
+          }
+        }
+      }
+    },
+    "PDF file - with Illustrator editing capabilities (.pdf)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF ファイル\n- Illustrator 編集機能保持 (.pdf)"
+          }
+        }
+      }
+    },
+    "PDF file - without Illustrator editing capabilities (.pdf)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF ファイル\n- Illustrator 編集機能なし (.pdf)"
+          }
+        }
+      }
+    },
+    "PDF with Illustrator editing capabilities" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF with Illustrator\nediting capabilities"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustrator 編集機能を\n保持した PDF です"
+          }
+        }
+      }
+    },
+    "PDF with Illustrator native data (.pdf)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF - Illustrator 編集機能保持 (.pdf)"
+          }
+        }
+      }
+    },
+    "PDF without Illustrator native data (.pdf)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF - Illustrator 編集機能なし (.pdf)"
+          }
+        }
+      }
+    },
+    "Photoshop EPS format (.eps)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photoshop EPS 形式 (.eps)"
+          }
+        }
+      }
+    },
+    "Photoshop format (.psd)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photoshop 形式 (.psd)"
+          }
+        }
+      }
+    },
+    "Preferences…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定…"
+          }
+        }
+      }
+    },
+    "Quit" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "終了"
+          }
+        }
+      }
+    },
+    "Quit Glow Ai" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Ai を終了する"
+          }
+        }
+      }
+    },
+    "sec" : {
+      "comment" : "seconds unit suffix in timeTotalText",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "秒"
+          }
+        }
+      }
+    },
+    "Status" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "状態"
+          }
+        }
+      }
+    },
+    "System Requirement" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システム要件"
+          }
+        }
+      }
+    },
+    "There are serious bugs in v25.3.1. Please do not use this version." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "v25.3.1 には深刻なバグがあります。このバージョンを使わないでください。"
+          }
+        }
+      }
+    },
+    "There is a problem which causes garbled spot color names in v%@. Please update it now." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "v%@ には特色名の文字化けを誘発する不具合があります。すぐにアップデートしてください。"
+          }
+        }
+      }
+    },
+    "There is a serious bug in v22.0.0. Please update it now." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "v22.0.0 には深刻なバグがあります。すぐにアップデートしてください。"
+          }
+        }
+      }
+    },
+    "This file is saved in %@.\nNote: spot color names may be garbled." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このファイルは %@ で\n保存されています。\n特色名の文字化けに注意が必要です。"
+          }
+        }
+      }
+    },
+    "This file is saved in %@.\nPlease handle this carefully." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このファイルは %@ で\n保存されています。\n慎重な取り扱いが必要です。"
+          }
+        }
+      }
+    },
+    "This is NOT an Illustrator file" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is NOT \nan Illustrator file"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustrator ファイル\nではありません"
+          }
+        }
+      }
+    },
+    "Time limit reached" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time limit reached"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "制限時間に達しました"
+          }
+        }
+      }
+    },
+    "Time limit: %lld sec" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "制限時間: %lld 秒"
+          }
+        }
+      }
+    },
+    "Unknown compat. version" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互換バージョン不明"
+          }
+        }
+      }
+    },
+    "Unknown version" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バージョン不明"
+          }
+        }
+      }
+    },
+    "Value" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "値"
+          }
+        }
+      }
+    },
+    "Version" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バージョン"
+          }
+        }
+      }
+    },
+    "Version info cannot be detected" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version info\ncannot be detected"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バージョン情報を\n検出できません"
+          }
+        }
+      }
+    },
+    "µs" : {
+      "comment" : "microseconds column header",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マイクロ秒"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}

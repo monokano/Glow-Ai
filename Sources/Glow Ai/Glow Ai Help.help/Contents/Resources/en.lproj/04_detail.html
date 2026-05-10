@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="AppleTitle" content="Detail Window">
+<title>Detail Window</title>
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<p class="breadcrumb"><a href="index.html">Glow Ai Help</a> › Detail Window</p>
+<h1>Detail Window</h1>
+
+<p>The Detail Window lets you inspect the version detection data used for a file, and re-run detection with different settings.</p>
+
+<h2>How to Open</h2>
+<p>Click "More Info" in the top-right corner of the <a href="03_notification.html">Notification Window</a>. The Detail Window appears as a sheet attached to the Notification Window.</p>
+
+<h2>Detail Information List</h2>
+<p>Shows all version-related data read from inside the file. Rows that contributed to the creation or compatibility version determination are shown in bold.</p>
+<p>If the detected file type does not match the file extension, the "Kind" row is shown in red.</p>
+
+<h2>Re-detecting the Version</h2>
+<p>Change any of the settings below and click "Detect" to re-run version detection with those settings. The result is also reflected in the Notification Window.</p>
+
+<h2>Detect Without Time Limit</h2>
+<p>Runs detection without a time limit, even when the time limit option is enabled. Use this when detection ended with a timeout.</p>
+
+<h2>Settings</h2>
+
+<h3>Do not detect XMP: CreatorTool</h3>
+<p>Glow Ai does not use CreatorTool for version determination. This option is always on by default. Turn it off only when you want to check the CreatorTool value.</p>
+
+<h3>Do not detect EPS compatibility version (v9 and later)</h3>
+<p>The initial state reflects the Preferences setting. Turn it off when you want to check the EPS compatibility version.</p>
+
+<h3>Limit read size</h3>
+<p>The initial state reflects the Preferences setting.</p>
+
+<div class="note">
+  <strong>Note</strong>
+  Changes made in the Detail Window are not saved to Preferences. Settings reset each time the Notification Window is shown.
+</div>
+
+<h2>Closing</h2>
+<p>Click "Close" to dismiss the Detail Window and return to the Notification Window.</p>
+</body>
+</html>

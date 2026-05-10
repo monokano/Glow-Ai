@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2017-2026 monokano</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>To copy icon files from Adobe Illustrator with administrator privileges.</string>
+
+	<!-- .ait の UTI をシステムに登録（未登録だと動的UTIになりアイコンが適用されないため） -->
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.adobe.illustrator.ait-template</string>
+			<key>UTTypeDescription</key>
+			<string>Adobe Illustrator Template</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>ait</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+
+	<!-- ドロップ受付のためのドキュメントタイプ宣言 -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<!-- Adobe Illustrator Document (.ai) -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Adobe Illustrator Document</string>
+			<key>CFBundleTypeIconFile</key>
+			<string>ai_ai_primary</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.illustrator.ai-image</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>ai</string>
+			</array>
+		</dict>
+		<!-- Adobe Illustrator Template (.ait) -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Adobe Illustrator Template</string>
+			<key>CFBundleTypeIconFile</key>
+			<string>ai_cc_ai_pad</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.illustrator.ait-template</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>ait</string>
+			</array>
+		</dict>
+		<!-- EPS File (.eps) -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>EPS File</string>
+			<key>CFBundleTypeIconFile</key>
+			<string>ai_eps</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.encapsulated-postscript</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>eps</string>
+			</array>
+		</dict>
+		<!-- すべてのファイル（フォルダ以外） -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>All Files</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.item</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
