@@ -232,23 +232,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // 各 Illustrator.app に対してまとめてファイルを渡す
-        for ac in IllustratorApp.shared.appClassALLIncludeBeta {
-            if !ac.openFilePaths.isEmpty {
-                IllustratorApp.shared.openWith(appURL: ac.appURL,
-                                               filePaths: ac.openFilePaths.joined(separator: " "))
+        // 各 Illustrator.app / Photoshop.app に対してまとめてファイルを渡す。
+        // NSWorkspace の open は非同期なので DispatchGroup で完了を待ち、
+        // 全アプリのアクティブ化完了後に Glow Ai を終了する。
+        // （早く終了すると macOS が直前にアクティブだった Finder にフォーカスを戻し、
+        //   一瞬 Finder 最前面 → Illustrator 最前面のちらつきが発生する）
+        let group = DispatchGroup()
+
+        for ac in IllustratorApp.shared.appClassALLIncludeBeta where !ac.openFileURLs.isEmpty {
+            group.enter()
+            IllustratorApp.shared.openWith(appURL: ac.appURL, fileURLs: ac.openFileURLs) {
+                group.leave()
             }
         }
 
-        // 各 Photoshop.app に対してまとめてファイルを渡す
-        for ac in PhotoshopApp.shared.appClassALL {
-            if !ac.openFilePaths.isEmpty {
-                PhotoshopApp.shared.openWith(appURL: ac.appURL,
-                                             filePaths: ac.openFilePaths.joined(separator: " "))
+        for ac in PhotoshopApp.shared.appClassALL where !ac.openFileURLs.isEmpty {
+            group.enter()
+            PhotoshopApp.shared.openWith(appURL: ac.appURL, fileURLs: ac.openFileURLs) {
+                group.leave()
             }
         }
 
-        appQuit()
+        group.notify(queue: .main) { [weak self] in
+            self?.appQuit()
+        }
     }
 
     // MARK: - showInfoWindow
@@ -284,7 +291,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 return true
             } else if fc.file?.pathExtension.lowercased() == "pdf" {
                 // 拡張子 .pdf のファイルは種類・バージョン一致を問わず常に通知ウィンドウを表示する
-                // reView: true でモードだけ評価し openFilePaths への追加は行わない
+                // reView: true でモードだけ評価し openFileURLs への追加は行わない
                 IllustratorApp.shared.openWithSameApp(fc: fc, reView: true, cmdKeyDown: cmdKeyDown)
                 return true
             } else {

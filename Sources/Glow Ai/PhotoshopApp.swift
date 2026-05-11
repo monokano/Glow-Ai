@@ -9,7 +9,7 @@ class PhotoshopAppClass {
     var version: String = ""
     var isBooted: Bool = false
     var icon: NSImage?
-    var openFilePaths: [String] = []
+    var openFileURLs: [URL] = []
 
     init(appURL: URL) {
         self.appURL = appURL
@@ -100,14 +100,13 @@ class PhotoshopApp {
 
     // MARK: - openWith
 
-    func openWith(appURL: URL, filePaths: String) {
-        guard !filePaths.isEmpty else { return }
-        let escaped = shellEscape(appURL.path)
-        let cmd = "open -a \(escaped) \(filePaths) && open \(escaped)"
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", cmd]
-        try? process.run()
+    func openWith(appURL: URL, fileURLs: [URL], completion: @escaping () -> Void) {
+        guard !fileURLs.isEmpty else { completion(); return }
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        NSWorkspace.shared.open(fileURLs, withApplicationAt: appURL, configuration: config) { _, _ in
+            DispatchQueue.main.async { completion() }
+        }
     }
 
     // MARK: - Private helpers

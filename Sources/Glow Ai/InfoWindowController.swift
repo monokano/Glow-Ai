@@ -241,7 +241,6 @@ final class InfoViewModel: ObservableObject {
 
     func openFile(onClose: @escaping () -> Void, forced: Bool = false) {
         guard let item = selectedRow, (forced || item.canOpen), let fileURL = fc.file else { return }
-        let escapedFile = "'" + fileURL.path.replacingOccurrences(of: "'", with: "'\\''") + "'"
 
         switch item.kind {
         case .illustrator(let ac):
@@ -254,9 +253,9 @@ final class InfoViewModel: ObservableObject {
                 case .ignore:     IllustratorApp.shared.willBootAppClass.append(ac)
                 }
             }
-            ac.openFilePaths.append(escapedFile)
+            ac.openFileURLs.append(fileURL)
         case .photoshop(let ac):
-            ac.openFilePaths.append(escapedFile)
+            ac.openFileURLs.append(fileURL)
         }
         onClose()
     }

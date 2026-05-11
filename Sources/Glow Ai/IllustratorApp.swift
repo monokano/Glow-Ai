@@ -11,8 +11,8 @@ class IllustratorAppClass {
     var versionDouble: Double = 0
     var isBooted: Bool = false
     var icon: NSImage?
-    /// このアプリで開くファイルの shell エスケープ済みパス配列
-    var openFilePaths: [String] = []
+    /// このアプリで開くファイルの URL 配列
+    var openFileURLs: [URL] = []
 
     init(appURL: URL) {
         self.appURL = appURL
@@ -96,7 +96,7 @@ class IllustratorApp {
 
     // MARK: - openWithSameApp
 
-    /// 同バージョンの Illustrator.app を探し、あれば ac.openFilePaths に追加して true を返す
+    /// 同バージョンの Illustrator.app を探し、あれば ac.openFileURLs に追加して true を返す
     /// なければ fc.infoWindowMode に理由をセットして false を返す
     @discardableResult
     func openWithSameApp(fc: FileClass, reView: Bool = false, cmdKeyDown: Bool = false) -> Bool {
@@ -175,7 +175,7 @@ class IllustratorApp {
             }
             if !reView {
                 guard let fileURL = fc.file else { return false }
-                ac.openFilePaths.append(shellEscape(fileURL.path))
+                ac.openFileURLs.append(fileURL)
             }
             return true
         } else {
@@ -186,7 +186,7 @@ class IllustratorApp {
                 }
                 if !reView {
                     guard let fileURL = fc.file else { return false }
-                    ac.openFilePaths.append(shellEscape(fileURL.path))
+                    ac.openFileURLs.append(fileURL)
                 }
                 return true
             } else {
@@ -196,16 +196,17 @@ class IllustratorApp {
         }
     }
 
-    // MARK: - OpenWith（シェルで open コマンドを実行）
+    // MARK: - OpenWith（NSWorkspace で対象アプリを起動／前面化してファイルを開く）
 
-    func openWith(appURL: URL, filePaths: String) {
-        guard !filePaths.isEmpty else { return }
-        let escaped = shellEscape(appURL.path)
-        let cmd = "open -a \(escaped) \(filePaths) && open \(escaped)"
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", cmd]
-        try? process.run()
+    /// 完了ハンドラは Illustrator の起動／アクティブ化が完了した時点で呼ばれる。
+    /// （Glow Ai 終了タイミングを Illustrator アクティブ化後に揃えるため必須）
+    func openWith(appURL: URL, fileURLs: [URL], completion: @escaping () -> Void) {
+        guard !fileURLs.isEmpty else { completion(); return }
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        NSWorkspace.shared.open(fileURLs, withApplicationAt: appURL, configuration: config) { _, _ in
+            DispatchQueue.main.async { completion() }
+        }
     }
 
     // MARK: - isAppBooted
