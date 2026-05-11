@@ -391,12 +391,12 @@ struct InfoView: View {
     private var labelSavedIgnored: Bool { vm.fc.infoWindowMode == 12 }
 
     private var minTableHeight: CGFloat {
-        max(26, CGFloat(max(1, min(vm.tableRows.count, 5))) * 26 - 134)
+        max(26, CGFloat(max(1, min(vm.tableRows.count, 3))) * 26 - 134)
     }
 
     private var minContentHeight: CGFloat {
-        let extraRows = max(0, vm.tableRows.count - 5)
-        return 356 + CGFloat(extraRows) * 26 + 26
+        let extraRows = max(0, vm.tableRows.count - 3)
+        return 304 + CGFloat(extraRows) * 26 + 26
     }
 
     var body: some View {
@@ -650,7 +650,7 @@ class InfoWindowController: NSWindowController {
         self.fc = fc
         self.showAlertIcon = showAlertIcon
         let win = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 356),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 304),
             styleMask: [.titled, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -679,10 +679,10 @@ class InfoWindowController: NSWindowController {
 
     func showModal() {
         guard let win = window else { return }
-        // 6行以上のときウィンドウ高さを拡張（5行以下は 356+26=382pt）
+        // 4行以上のときウィンドウ高さを拡張（3行以下は 304+26=330pt）
         let rowCount = viewModel?.tableRows.count ?? 0
-        let extraRows = max(0, rowCount - 5)
-        let targetHeight = 356 + CGFloat(extraRows) * 26 + 26
+        let extraRows = max(0, rowCount - 3)
+        let targetHeight = 304 + CGFloat(extraRows) * 26 + 26
         win.setContentSize(NSSize(width: 420, height: targetHeight))
         win.minSize = win.frame.size  // setContentSize 後のフレームサイズを最小値に設定
         centerWindow(win)
