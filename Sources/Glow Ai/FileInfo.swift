@@ -122,15 +122,6 @@ enum FileInfo {
         }
     }
 
-    // MARK: - HasNativeDatePDF
-
-    static func hasNativeDataPDF(url: URL) -> Bool {
-        guard url.pathExtension.lowercased() == "pdf" else { return false }
-        guard let data = try? Data(contentsOf: url) else { return false }
-        guard let text = String(data: data, encoding: .ascii) else { return false }
-        return text.contains("%!PS-Adobe")
-    }
-
     // MARK: - Utilities
 
     static func regexMatch(in string: String, pattern: String) -> String {

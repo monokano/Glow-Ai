@@ -158,7 +158,7 @@ final class InfoViewModel: ObservableObject {
         let savedMajor  = Int(fc.determine_Saved.components(separatedBy:  ".").first ?? "") ?? 0
         let minAppMajor = IllustratorApp.shared.getMinimumVerAppClass()
             .flatMap { Int($0.version.components(separatedBy: ".").first ?? "") } ?? 0
-        let isPDF = fc.file?.pathExtension.lowercased() == "pdf"
+        let isPDF = fc.kind == "PDF"
 
         if fc.isIllustratorFile {
             IllustratorApp.shared.getAppALLRefresh()
@@ -174,7 +174,15 @@ final class InfoViewModel: ObservableObject {
                         canOpen = true
                     }
                     if minAppMajor > targetMajor { canOpen = true }
-                    if isPDF && fc.isIllustratorFile { canOpen = appMajor == targetMajor }
+                    if isPDF && fc.isIllustratorFile {
+                        if appMajor < targetMajor {
+                            canOpen = false
+                        } else if appMajor == targetMajor {
+                            canOpen = true
+                        } else {
+                            canOpen = prefs.allowOpeningInHigherVersion
+                        }
+                    }
                 }
                 tableRows.append(AppListRow(
                     kind: .illustrator(ac), name: folder,
@@ -620,8 +628,7 @@ struct InfoView: View {
             Toggle("Allow opening in compatible version",
                    isOn: $vm.allowCompat)
                 .disabled(isPhotoshop ||
-                          (vm.fc.file?.pathExtension.lowercased() == "pdf"
-                           && vm.fc.isIllustratorFile))
+                          (vm.fc.kind == "PDF" && vm.fc.isIllustratorFile))
             Toggle("Allow opening in higher version",
                    isOn: $vm.allowHigher)
                 .disabled(isPhotoshop)
