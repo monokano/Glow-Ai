@@ -624,14 +624,15 @@ struct InfoView: View {
 
     private var checkboxSection: some View {
         let isPhotoshop = vm.fc.appName == "Photoshop"
+        let isEmpty = vm.tableRows.isEmpty
         return VStack(alignment: .leading, spacing: 9) {
             Toggle("Allow opening in compatible version",
                    isOn: $vm.allowCompat)
-                .disabled(isPhotoshop ||
+                .disabled(isEmpty || isPhotoshop ||
                           (vm.fc.kind == "PDF" && vm.fc.isIllustratorFile))
             Toggle("Allow opening in higher version",
                    isOn: $vm.allowHigher)
-                .disabled(isPhotoshop)
+                .disabled(isEmpty || isPhotoshop)
         }
         .toggleStyle(.checkbox)
         .font(.system(size: NSFont.systemFontSize))
