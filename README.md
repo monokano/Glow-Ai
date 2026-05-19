@@ -1,3 +1,5 @@
+![Aver screenshot](img/icon.png)
+
 # Glow Ai
 
 macOS用デスクトップアプリ
@@ -6,7 +8,7 @@ macOS用デスクトップアプリ
 
 Glow Ai は、Adobe Illustrator ファイル（.ai / .ait / .eps）を、そのファイルが作成されたバージョンの Illustrator で自動的に開くユーティリティアプリです。EPS ファイルが Photoshop で作成されていた場合は、通知ウインドウを表示してどのバージョンの Photoshop で開くかを選択できます。Illustrator編集機能を保持したPDFファイルに対応。
 
-![Aver screenshot](GlowAi-img.png)
+![Aver screenshot](img/windoe-400.png)
 
 ## 使い方
 
