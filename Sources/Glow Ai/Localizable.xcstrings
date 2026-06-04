@@ -64,7 +64,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "別バージョンの Illustrator.app が\n起動しています"
+            "value" : "別バージョンの Illustrator が\n起動しています"
           }
         }
       }
@@ -410,7 +410,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "同じメジャーバージョンの\nIllustrator.app がありません"
+            "value" : "同じメジャーバージョンの\nIllustrator がありません"
           }
         }
       }
@@ -427,7 +427,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "マイナーバージョンが一致している\nIllustrator.app がありません"
+            "value" : "マイナーバージョンが一致している\nIllustrator がありません"
           }
         }
       }

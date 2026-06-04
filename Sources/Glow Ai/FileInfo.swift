@@ -243,6 +243,15 @@ enum FileInfo {
                     return "Ai"
                 }
             }
+            // A-2.5. xref を辿れない場合の前方探索フォールバック。
+            //   ページ辞書が巨大で /PieceInfo が pdfObjStr の読み取り上限を超える、
+            //   または xref ストリーム形式等で traverse が失敗しても、
+            //   ファイル中に /AIMetaData があれば通常の .ai と判定する（WebApp AFVer と同挙動）。
+            if fileContainsMarker(url: url, marker: "/AIMetaData") {
+                fc.isIllustratorFile = true
+                fc.isTemplate = isIllustratorTemplateFormat(url: url)
+                return "Ai"
+            }
             // A-3. それ以外 → 通常PDF
             return "PDF"
         }
@@ -339,6 +348,29 @@ enum FileInfo {
         defer { try? fh.close() }
         let data = fh.readData(ofLength: 65536)
         return data.range(of: Data("/AIPDFPrivateData".utf8)) != nil
+    }
+
+    /// ファイル全体をチャンク読みして指定マーカーの有無を返す（前方探索フォールバック用）
+    /// 全体を一度にメモリへ載せず、チャンク境界での取りこぼしを overlap で防ぐ。
+    private static func fileContainsMarker(url: URL, marker: String) -> Bool {
+        guard let fh = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? fh.close() }
+        let needle = Data(marker.utf8)
+        guard needle.count > 0 else { return false }
+        let overlap = needle.count - 1
+        let chunkSize = 1 << 20  // 1MB
+        var carry = Data()
+        while true {
+            let chunk = fh.readData(ofLength: chunkSize)
+            if chunk.isEmpty { break }
+            var buf = carry
+            buf.append(chunk)
+            if buf.range(of: needle) != nil { return true }
+            // 末尾 overlap バイトを次回チャンクへ持ち越し、境界をまたぐマーカーを検出
+            carry = buf.count > overlap ? buf.suffix(overlap) : buf
+            if chunk.count < chunkSize { break }
+        }
+        return false
     }
 
     /// 本物のIllustratorテンプレート（.ait）判定

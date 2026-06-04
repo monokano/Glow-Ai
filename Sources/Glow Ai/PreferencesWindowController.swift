@@ -81,9 +81,25 @@ class PreferencesWindowController: NSWindowController {
 
     private func setupConstraints(content: NSView) {
         NSLayoutConstraint.activate([
-            // EPS チェック（左上）
+            // 常に通知ウインドウ（左上）
+            checkAlwaysNotify.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
+            checkAlwaysNotify.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
+            checkAlwaysNotify.topAnchor.constraint(equalTo: content.topAnchor, constant: 20),
+
+            // 起動時に関連付けをする
+            checkAutoClaim.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
+            checkAutoClaim.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
+            checkAutoClaim.topAnchor.constraint(equalTo: checkAlwaysNotify.bottomAnchor, constant: 14),
+
+            // セパレータ
+            separator.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
+            separator.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
+            separator.topAnchor.constraint(equalTo: checkAutoClaim.bottomAnchor, constant: 18),
+            separator.heightAnchor.constraint(equalToConstant: 1),
+
+            // EPS チェック
             checkEPS.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
-            checkEPS.topAnchor.constraint(equalTo: content.topAnchor, constant: 20),
+            checkEPS.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: 18),
 
             // 制限時間チェック
             checkTimeLimit.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
@@ -94,24 +110,8 @@ class PreferencesWindowController: NSWindowController {
             slider.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
             slider.centerYAnchor.constraint(equalTo: checkTimeLimit.centerYAnchor),
 
-            // セパレータ
-            separator.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
-            separator.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
-            separator.topAnchor.constraint(equalTo: checkTimeLimit.bottomAnchor, constant: 18),
-            separator.heightAnchor.constraint(equalToConstant: 1),
-
-            // 常に通知ウインドウ
-            checkAlwaysNotify.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
-            checkAlwaysNotify.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
-            checkAlwaysNotify.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: 18),
-
-            // 起動時に関連付けをする
-            checkAutoClaim.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
-            checkAutoClaim.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
-            checkAutoClaim.topAnchor.constraint(equalTo: checkAlwaysNotify.bottomAnchor, constant: 14),
-
             // ウィンドウ下端
-            content.bottomAnchor.constraint(equalTo: checkAutoClaim.bottomAnchor, constant: 26),
+            content.bottomAnchor.constraint(equalTo: checkTimeLimit.bottomAnchor, constant: 26),
         ])
     }
 
