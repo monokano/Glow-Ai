@@ -86,8 +86,24 @@ enum FileInfo {
         // 6. アプリ名
         if fc.isIllustratorFile {
             fc.appName = "Illustrator"
-        } else if isPhotoshopFile(url: resolved, kind: fc.kind) || fc.xmp_CreatorTool.contains("Photoshop") {
+        } else if isPhotoshopFile(url: resolved, kind: fc.kind) || fc.isPhotoshopEditablePDF || fc.xmp_CreatorTool.contains("Photoshop") {
             fc.appName = "Photoshop"
+        }
+
+        // 7. Photoshop バージョン取得（表示専用）: PSD/PSB=cinf psVersion / EPS=%%Creator / 編集PDF=埋め込みcinf
+        if fc.appName == "Photoshop" {
+            if fc.kind == "PSD" || fc.kind == "PSB" {
+                if let v = psVersionFromCinf(url: resolved) { fc.psVersion = v }
+            } else if fc.kind == "EPS" {
+                if let v = psVersionFromEPSCreator(url: resolved) { fc.psVersion = v }
+            } else if fc.kind == "PDF" && fc.isPhotoshopEditablePDF, let xref = pdfXref {
+                if let fh = try? FileHandle(forReadingFrom: resolved) {
+                    defer { try? fh.close() }
+                    if let v = psVersionFromPhotoshopPDF(root: xref.root, offsets: xref.offsets, fh: fh) {
+                        fc.psVersion = v
+                    }
+                }
+            }
         }
 
         fc.time_TotalSeconds = String(format: "%.3f", Date().timeIntervalSince(startTotal))
@@ -206,7 +222,7 @@ enum FileInfo {
     /// - B. PostScript セクション（生PSヘッダ or バイナリEPSラッパ後のPS）
     ///     - 1行目に `EPSF-` を含む → `kind="EPS"`、`%%Creator:` で Illustrator/Photoshop を判定
     ///     - 含まない（純PSの旧.ai） → Illustrator マーカーがあれば `kind="Ai"`, isIllustratorFile=true
-    /// - C. PSD ネイティブ（先頭4B = `8BPS`） → `kind="PSD"`
+    /// - C. PSD/PSB ネイティブ（先頭4B = `8BPS`） → version(byte4-5) で `kind="PSD"`(=1) / `"PSB"`(=2)
     /// - D. それ以外 → `kind=""`
     ///
     /// Finder Creator/FileType（ART5/8BIM）は最初に短絡させる（クラシックMac互換）。
@@ -243,6 +259,14 @@ enum FileInfo {
                     return "Ai"
                 }
             }
+            // A-2.6. Photoshop編集機能保持PDF（Page→/PieceInfo→/AdobePhotoshop）
+            if let fh = try? FileHandle(forReadingFrom: url) {
+                defer { try? fh.close() }
+                if pdfPageHasAdobePhotoshop(root: xref.root, offsets: xref.offsets, fh: fh) {
+                    fc.isPhotoshopEditablePDF = true
+                    return "PDF"
+                }
+            }
             // A-2.5. xref を辿れない場合の前方探索フォールバック。
             //   ページ辞書が巨大で /PieceInfo が pdfObjStr の読み取り上限を超える、
             //   または xref ストリーム形式等で traverse が失敗しても、
@@ -276,12 +300,14 @@ enum FileInfo {
             }
         }
 
-        // C. PSD ネイティブ（8BPS マジック）
+        // C. PSD/PSB ネイティブ（8BPS マジック）
         if let fh = try? FileHandle(forReadingFrom: url) {
-            let magic = fh.readData(ofLength: 4)
+            let header = fh.readData(ofLength: 6)   // 署名4B + version2B
             try? fh.close()
-            if magic.starts(with: Data("8BPS".utf8)) {
-                return "PSD"
+            if header.starts(with: Data("8BPS".utf8)) {
+                // version（big-endian, byte 4-5）: 1=PSD / 2=PSB
+                let version = header.count >= 6 ? (UInt16(header[4]) << 8 | UInt16(header[5])) : 1
+                return version == 2 ? "PSB" : "PSD"
             }
         }
 
@@ -327,9 +353,165 @@ enum FileInfo {
     }
 
     private static func isPhotoshopFile(url: URL, kind: String) -> Bool {
-        if kind == "PSD" { return true }
+        if kind == "PSD" || kind == "PSB" { return true }
         if kind == "EPS" { return epsIsPhotoshop(url: url) }
         return false
+    }
+
+    // MARK: - Photoshop バージョン取得（表示専用・照合には使わない）
+
+    /// PSD/PSB の cinf ブロックから psVersion（最終保存 Photoshop エンジン版・fix付き）を取得する。
+    /// FileHandle のシークでセクション長を辿り、末尾の画素データ等は一切読まない（大容量でも高速）。
+    /// ★長さフィールド幅は version ではなく **署名**で決まる（8BIM=4バイト / 8B64=8バイト）。
+    private static func psVersionFromCinf(url: URL) -> String? {
+        guard let fh = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? fh.close() }
+
+        func at(_ off: UInt64, _ n: Int) -> Data? {
+            try? fh.seek(toOffset: off)
+            let d = (try? fh.read(upToCount: n)) ?? nil
+            return (d?.count == n) ? d : nil
+        }
+        func be(_ d: Data) -> UInt64 {
+            var v: UInt64 = 0
+            for b in d { v = (v << 8) | UInt64(b) }
+            return v
+        }
+
+        guard let head = at(0, 6), head.prefix(4) == Data("8BPS".utf8) else { return nil }
+        let isPSB = (be(head.suffix(2)) == 2)
+        let lenW = isPSB ? 8 : 4
+
+        var o: UInt64 = 26
+        guard let cm = at(o, 4) else { return nil }    // Color Mode Data
+        o += 4 + be(cm)
+        guard let ir = at(o, 4) else { return nil }    // Image Resources
+        o += 4 + be(ir)
+
+        guard let lm = at(o, lenW) else { return nil } // Layer&Mask 長
+        let lmLen = be(lm)
+        o += UInt64(lenW)
+        guard lmLen > 0 else { return nil }
+        let lmEnd = o + lmLen
+
+        guard let li = at(o, lenW) else { return nil } // Layer Info（画素データ含む→長さ分シーク）
+        o += UInt64(lenW) + be(li)
+        if o + 4 <= lmEnd, let gm = at(o, 4) {         // Global Layer Mask Info（長さは常に4B）
+            o += 4 + be(gm)
+        }
+
+        let sig8BIM = Data("8BIM".utf8)
+        let sig8B64 = Data("8B64".utf8)
+        while o + 12 <= lmEnd {
+            guard let sigD = at(o, 4) else { return nil }
+            guard sigD == sig8BIM || sigD == sig8B64 else { o += 1; continue }
+            guard let keyD = at(o + 4, 4) else { return nil }
+            let key = String(decoding: keyD, as: UTF8.self)
+            let lenIs8 = (sigD == sig8B64)             // ★署名で長さ幅を判定
+            let lw = lenIs8 ? 8 : 4
+            guard let lenD = at(o + 8, lw) else { return nil }
+            let blockLen = be(lenD)
+            let dStart = o + 8 + UInt64(lw)
+            if key == "cinf" {
+                let cap = Int(min(blockLen, 65536))
+                guard let cinf = at(dStart, cap) else { return nil }
+                return parsePsVersionFromCinf(cinf)
+            }
+            o = dStart + blockLen + (blockLen & 1)      // データ長を偶数に切り上げ
+        }
+        return nil
+    }
+
+    /// cinf descriptor 内から psVersion(major.minor.fix) を抽出する。
+    /// "psVersion" 文字列以降の major/minor/fix(long) を拾う（Vrsn=1.3.0 は psVersion より前に出るため取り違えない）。
+    private static func parsePsVersionFromCinf(_ d: Data) -> String? {
+        guard let r = d.range(of: Data("psVersion".utf8)) else { return nil }
+        func longAfter(_ key: String) -> Int? {
+            guard let kr = d.range(of: Data(key.utf8), in: r.upperBound..<d.endIndex) else { return nil }
+            let valStart = kr.upperBound + 4          // key の直後 type(4B 'long') を飛ばす
+            guard valStart + 4 <= d.endIndex else { return nil }
+            var v: Int32 = 0
+            for i in 0..<4 { v = (v << 8) | Int32(d[valStart + i]) }
+            return Int(v)
+        }
+        guard let mj = longAfter("major"),
+              let mn = longAfter("minor"),
+              let fx = longAfter("fix") else { return nil }
+        return "\(mj).\(mn).\(fx)"
+    }
+
+    /// Photoshop EPS の PS ヘッダ（既読の先頭16KB）から %%Creator のバージョンを抽出する（全体スキャン不要）。
+    /// 例: `%%Creator: Adobe Photoshop Version 26.11.4 ...` → "26.11.4"
+    private static func psVersionFromEPSCreator(url: URL) -> String? {
+        guard let ps = epsReadPSHeader(url: url, length: 16384),
+              let regex = try? NSRegularExpression(
+                pattern: #"%%Creator: Adobe Photoshop Version (\d+\.\d+\.\d+)"#) else { return nil }
+        let range = NSRange(ps.startIndex..., in: ps)
+        guard let m = regex.firstMatch(in: ps, range: range),
+              let r = Range(m.range(at: 1), in: ps) else { return nil }
+        return String(ps[r])
+    }
+
+    /// Page → /PieceInfo に /AdobePhotoshop があるか（Photoshop編集機能保持PDF判定）。
+    /// Illustrator編集PDF（/PieceInfo/Illustrator）と同じ機構の Photoshop 版。
+    private static func pdfPageHasAdobePhotoshop(root: Int, offsets: [Int: UInt64], fh: FileHandle) -> Bool {
+        guard let catStr   = pdfObjStr(num: root,    offsets: offsets, fh: fh),
+              let pagesN   = pdfObjRef("Pages",      in: catStr),
+              let pagesStr  = pdfObjStr(num: pagesN,  offsets: offsets, fh: fh),
+              let pageN    = pdfFirstKid(in: pagesStr),
+              let pageStr   = pdfObjStr(num: pageN,   offsets: offsets, fh: fh) else { return false }
+        return pageStr.contains("/AdobePhotoshop")
+    }
+
+    /// Photoshop編集機能保持PDF の埋め込みデータから psVersion を取得する。
+    /// Page → /PieceInfo /AdobePhotoshop << … /Private N 0 R >> → /StandardImageFileData（FlateDecode）→ cinf。
+    /// /AdobePhotoshop はインライン辞書のため、その直後の /Private 参照を拾う。
+    private static func psVersionFromPhotoshopPDF(root: Int, offsets: [Int: UInt64], fh: FileHandle) -> String? {
+        guard let catStr   = pdfObjStr(num: root,    offsets: offsets, fh: fh),
+              let pagesN   = pdfObjRef("Pages",      in: catStr),
+              let pagesStr  = pdfObjStr(num: pagesN,  offsets: offsets, fh: fh),
+              let pageN    = pdfFirstKid(in: pagesStr),
+              let pageStr   = pdfObjStr(num: pageN,   offsets: offsets, fh: fh),
+              let apr      = pageStr.range(of: "/AdobePhotoshop") else { return nil }
+        let afterAP = String(pageStr[apr.upperBound...])
+        guard let privN    = pdfObjRef("Private", in: afterAP),
+              let privStr   = pdfObjStr(num: privN, offsets: offsets, fh: fh),
+              let dataN    = pdfObjRef("StandardImageFileData", in: privStr),
+              let inflated = readPDFObjStream(num: dataN, offsets: offsets, fh: fh) else { return nil }
+        return parsePsVersionFromCinf(inflated)
+    }
+
+    /// Photoshop の psVersion.major → 製品名/年（表示専用）。Photoshop 2020 以降は「major + 1999」。
+    static func psVersionName(_ ver: String) -> String {
+        let parts = ver.components(separatedBy: ".")
+        guard let major = Int(parts.first ?? "") else { return ver }
+        let (minor, minorSuffix): (Int, String) = {
+            guard parts.count > 1 else { return (0, "") }
+            let raw = parts[1]
+            let digits = raw.prefix(while: { $0.isNumber })
+            let suffix = raw[digits.endIndex...]
+            return (Int(digits) ?? 0, String(suffix))
+        }()
+
+        switch major {
+        case 1...4:  return parts[0]
+        case 5:      return minorSuffix.isEmpty ? (minor > 0 ? "5.\(minor)" : "5") : "5"
+        case 6...7:  return parts[0]
+        case 8:      return "CS"
+        case 9:      return "CS2"
+        case 10:     return "CS3"
+        case 11:     return "CS4"
+        case 12:     return minor > 0 ? "CS5.\(minor)" : "CS5"
+        case 13:     return "CS6"
+        case 14:     return "CC"
+        case 15:     return "CC 2014"
+        case 16:     return "CC 2015"
+        case 17:     return "CC 2015.5"
+        case 18:     return "CC 2017"
+        case 19:     return "CC 2018"
+        case 20:     return "CC 2019"
+        default:     return major > 20 ? "\(major + 1999)" : ver
+        }
     }
 
     // MARK: - PDF構造ファイル判定

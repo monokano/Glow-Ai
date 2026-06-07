@@ -82,18 +82,8 @@ final class InfoViewModel: ObservableObject {
 
     var hasKindBalloon: Bool { !kindBalloonMessage.isEmpty }
 
-    /// 種類バルーンを危険色（赤）で表示すべきか
-    /// 各形式で正規の拡張子以外のファイルは赤。D（その他）は常に赤
-    var kindBalloonIsDangerous: Bool {
-        let ext = fc.file?.pathExtension.lowercased() ?? ""
-        if fc.kind == "PDF"                               { return ext != "pdf" }  // A1 / A3
-        if fc.kind == "Ai"  && fc.isIllustratorFile && fc.isTemplate { return ext != "ai"  }  // A2b
-        if fc.kind == "Ai"  && fc.isIllustratorFile      { return ext != "ait" }  // A2
-        if fc.kind == "EPS" && fc.isIllustratorFile      { return ext != "eps" }  // B1
-        if fc.kind == "EPS" && fc.appName == "Photoshop" { return ext != "eps" }  // B2
-        if fc.kind == "PSD"                               { return ext != "psd" }  // C
-        return true  // D: 常に赤
-    }
+    /// 種類バルーンを危険色（赤）で表示すべきか（判定本体は FileClass.isKindDangerous）
+    var kindBalloonIsDangerous: Bool { fc.isKindDangerous }
 
     var kindBalloonMessage: String {
         let ext = fc.file?.pathExtension.lowercased() ?? ""
@@ -104,6 +94,8 @@ final class InfoViewModel: ObservableObject {
             return ext == "ait" ? "" : String(localized: "Illustrator Template format (.ait)")
         case ("Ai", true, _):
             return ext == "ai" ? "" : String(localized: "Adobe Illustrator format (.ai)")
+        case ("PDF", _, _) where fc.isPhotoshopEditablePDF:
+            return String(localized: "PDF file - with Photoshop editing capabilities (.pdf)")
         case ("PDF", false, _):
             return String(localized: "PDF file - without Illustrator editing capabilities (.pdf)")
         case ("EPS", true, _):
@@ -112,6 +104,8 @@ final class InfoViewModel: ObservableObject {
             return String(localized: "Photoshop EPS format (.eps)")
         case ("PSD", _, _):
             return String(localized: "Photoshop format (.psd)")
+        case ("PSB", _, _):
+            return String(localized: "Large Document format (.psb)")
         default:
             return String(localized: "Not an Illustrator file")
         }
@@ -367,7 +361,11 @@ struct InfoView: View {
 
     // 作成バージョン（"Illustrator 2025 (29.8.5)" 形式）
     private var labelCreated: String {
-        if vm.fc.appName == "Photoshop" { return "Photoshop" }
+        if vm.fc.appName == "Photoshop" {
+            // cinf(PSD/PSB) / %%Creator(EPS) から取得した psVersion を表示（照合には使わない）
+            return vm.fc.psVersion.isEmpty ? "Photoshop" :
+                "Photoshop \(FileInfo.psVersionName(vm.fc.psVersion)) (\(vm.fc.psVersion))"
+        }
         guard vm.fc.isIllustratorFile else { return "" }
         if vm.fc.determine_Created.isEmpty { return String(localized: "Unknown version") }
         return "\(vm.fc.appName) \(FileInfo.versionName(vm.fc.determine_Created)) (\(vm.fc.determine_Created))"
@@ -790,6 +788,8 @@ struct MoreInfoView: View {
         switch (fc.kind, fc.isIllustratorFile, fc.appName) {
         case ("PDF", true, _):
             return (String(localized: "PDF with Illustrator native data (.pdf)"), ext != "pdf")
+        case ("PDF", _, _) where fc.isPhotoshopEditablePDF:
+            return (String(localized: "PDF with Photoshop native data (.pdf)"), ext != "pdf")
         case ("Ai", true, _) where fc.isTemplate:
             return (String(localized: "Illustrator Template format (.ait)"),            ext != "ai" && ext != "ait")
         case ("Ai", true, _):
@@ -802,13 +802,18 @@ struct MoreInfoView: View {
             return (String(localized: "Photoshop EPS format (.eps)"),             ext != "eps")
         case ("PSD", _, _):
             return (String(localized: "Photoshop format (.psd)"),                 ext != "psd")
+        case ("PSB", _, _):
+            return (String(localized: "Large Document format (.psb)"),            ext != "psb")
         default:
             return (fc.kind, true)
         }
     }
 
     private var labelCreated: String {
-        if currentFC.appName == "Photoshop" { return "Photoshop" }
+        if currentFC.appName == "Photoshop" {
+            return currentFC.psVersion.isEmpty ? "Photoshop" :
+                "Photoshop \(FileInfo.psVersionName(currentFC.psVersion)) (\(currentFC.psVersion))"
+        }
         guard currentFC.isIllustratorFile, !currentFC.determine_Created.isEmpty else { return "" }
         return "\(currentFC.appName) \(FileInfo.versionName(currentFC.determine_Created)) (\(currentFC.determine_Created))"
     }

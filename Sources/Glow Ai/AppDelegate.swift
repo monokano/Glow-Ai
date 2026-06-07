@@ -227,7 +227,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
             let needsWindow = evaluateInfoWindowMode(fc: fc, cmdKeyDown: cmdKeyDownAtDrop)
             if needsWindow {
-                let showAlert = fc.infoWindowMode != 11 && fc.infoWindowMode != 12
+                // 警告バッジ:
+                // ・Photoshopファイル → 種類バルーンが赤（拡張子偽装）のときだけ付ける
+                // ・それ以外（Illustrator等） → 従来どおり（mode 11=制限時間超過 / 12=Illustrator編集PDF は付けない）
+                let showAlert = fc.appName == "Photoshop"
+                    ? fc.isKindDangerous
+                    : (fc.infoWindowMode != 11 && fc.infoWindowMode != 12)
                 showInfoWindow(fc: fc, showAlertIcon: showAlert)
             }
         }
