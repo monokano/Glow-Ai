@@ -38,6 +38,9 @@ class Preferences {
     /// 起動時にファイル関連付けを自動登録する（.ai / .ait / .eps）
     var autoClaimFileAssociations: Bool = true
 
+    /// ファイルアイコン取込完了を通知しない（完了・失敗ダイアログを抑制）
+    var doNotNotifyIconImport: Bool = false
+
     /// 通知ウインドウの幅
     var infoWindowWidth: Int = 450
 
@@ -61,6 +64,7 @@ class Preferences {
         case timeLimit
         case isNotDetectEPSCompatibleVer
         case autoClaimFileAssociations
+        case doNotNotifyIconImport
         case infoWindowWidth
         case moreInfoSheetWidth
         case nonReleaseVersion
@@ -79,6 +83,7 @@ class Preferences {
         timeLimit                    = d.object(forKey: Key.timeLimit.rawValue)                    as? Int  ?? 5
         isNotDetectEPSCompatibleVer  = d.object(forKey: Key.isNotDetectEPSCompatibleVer.rawValue)  as? Bool ?? true
         autoClaimFileAssociations    = d.object(forKey: Key.autoClaimFileAssociations.rawValue)    as? Bool ?? true
+        doNotNotifyIconImport        = d.object(forKey: Key.doNotNotifyIconImport.rawValue)        as? Bool ?? false
         infoWindowWidth              = d.object(forKey: Key.infoWindowWidth.rawValue)              as? Int  ?? 450
         moreInfoSheetWidth           = d.object(forKey: Key.moreInfoSheetWidth.rawValue)           as? Int  ?? 450
         nonReleaseVersion            = d.object(forKey: Key.nonReleaseVersion.rawValue)            as? Int  ?? 0
@@ -95,6 +100,7 @@ class Preferences {
         d.set(timeLimit,                    forKey: Key.timeLimit.rawValue)
         d.set(isNotDetectEPSCompatibleVer,  forKey: Key.isNotDetectEPSCompatibleVer.rawValue)
         d.set(autoClaimFileAssociations,    forKey: Key.autoClaimFileAssociations.rawValue)
+        d.set(doNotNotifyIconImport,        forKey: Key.doNotNotifyIconImport.rawValue)
         d.set(infoWindowWidth,              forKey: Key.infoWindowWidth.rawValue)
         d.set(moreInfoSheetWidth,           forKey: Key.moreInfoSheetWidth.rawValue)
         d.set(nonReleaseVersion,            forKey: Key.nonReleaseVersion.rawValue)

@@ -16,6 +16,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var countDrop: Int = 0
     /// 初回ドロップ時の cmd キー状態（application(_:open:) 呼び出し直後にキャプチャ）
     private var cmdKeyDownAtDrop: Bool = false
+    /// 起動時ダイアログ（アイコン取込・危険バージョン警告）が終わったか
+    private var iconImportDone: Bool = false
+    /// 起動時ダイアログの完了を待って runStart() を実行するための保留フラグ
+    private var pendingRunStart: Bool = false
     /// 現在表示中の InfoWindow コントローラ
     var infoWindowController: InfoWindowController?
     /// 環境設定ウインドウ
@@ -41,7 +45,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
-        let prefs = Preferences.shared
 
         // macOS 13.0 未満は対象外（Deployment Target で弾かれるが念のため）
         if #unavailable(macOS 13.0) {
@@ -72,29 +75,49 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 .forEach { NSApp.mainMenu?.removeItem($0) }
         }
 
-        // アイコンファイルのコピー（最新 Illustrator.app から）
-        if !IllustratorApp.shared.appClassALL.isEmpty {
-            let bundleBuild = Int(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0") ?? 0
-            if prefs.nonReleaseVersion != bundleBuild {
-                IllustratorApp.shared.getIconFile { version in
-                    self.showIconImportedAlert(version: version)
-                } onFailure: { version in
-                    self.showIconImportFailedAlert(version: version)
-                }
-                prefs.nonReleaseVersion = bundleBuild
-                prefs.save()
-            } else if let latest = IllustratorApp.shared.getMaximumVerAppClass(),
-                      latest.version != prefs.appIconVersion {
-                IllustratorApp.shared.getIconFile { version in
-                    self.showIconImportedAlert(version: version)
-                } onFailure: { version in
-                    self.showIconImportFailedAlert(version: version)
-                }
+        // 起動時ダイアログ（アイコン取込）を真っ先に表示するため、
+        // 完了まで runStart()（通知ウィンドウ処理）を保留する。
+        importIconsIfNeeded { [weak self] in
+            guard let self else { return }
+            self.iconImportDone = true
+            if self.pendingRunStart {
+                self.pendingRunStart = false
+                self.runStart()
             }
-
-            // 危険バージョン警告
-            showDangerousVersionAlerts()
         }
+    }
+
+    // MARK: - アイコン取込
+
+    /// アイコン取込が必要なら実行し、完了ダイアログ（抑制設定でない場合）を表示してから
+    /// completion を呼ぶ。取込不要・中止の場合も必ず completion を呼ぶ。
+    private func importIconsIfNeeded(completion: @escaping () -> Void) {
+        let prefs = Preferences.shared
+        guard !IllustratorApp.shared.appClassALL.isEmpty else { completion(); return }
+
+        let bundleBuild = Int(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0") ?? 0
+
+        let needImport: Bool
+        if prefs.nonReleaseVersion != bundleBuild {
+            prefs.nonReleaseVersion = bundleBuild
+            prefs.save()
+            needImport = true
+        } else if let latest = IllustratorApp.shared.getMaximumVerAppClass(),
+                  latest.version != prefs.appIconVersion {
+            needImport = true
+        } else {
+            needImport = false
+        }
+
+        guard needImport else { completion(); return }
+
+        IllustratorApp.shared.getIconFile(onSuccess: { [weak self] version in
+            self?.showIconImportedAlert(version: version)
+        }, onFailure: { [weak self] version in
+            self?.showIconImportFailedAlert(version: version)
+        }, onComplete: {
+            completion()
+        })
     }
 
     // MARK: - ファイル関連付け再登録
@@ -201,8 +224,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 初回ドロップ時のみ RunStart を起動する
         // 2回目以降は dropItems に追加済みなので RunStart 内で処理される
+        // ただし起動時ダイアログを先に出すため、未完了なら保留する。
         if countDrop == 1 {
-            runStart()
+            if iconImportDone {
+                runStart()
+            } else {
+                pendingRunStart = true
+            }
         }
     }
 
@@ -281,8 +309,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // 戻り値：通知ウィンドウを表示すべき場合 true、ファイルを直接開いた場合 false
     @discardableResult
     func evaluateInfoWindowMode(fc: FileClass, cmdKeyDown: Bool = false) -> Bool {
-        let dangerousVersions = ["25.3.1", "22.0.0", "21.0.0", "21.0.1", "21.0.2"]
-
         if fc.isTimeOut {
             fc.infoWindowMode = 11
             return true
@@ -291,10 +317,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             fc.infoWindowMode = 12
             return true
         } else if fc.isIllustratorFile && !fc.determine_Created.isEmpty {
-            if dangerousVersions.contains(fc.determine_Created) {
-                fc.infoWindowMode = 7
-                return true
-            } else if fc.file?.pathExtension.lowercased() == "pdf" {
+            if fc.file?.pathExtension.lowercased() == "pdf" {
                 // 拡張子 .pdf のファイルは種類・バージョン一致を問わず常に通知ウィンドウを表示する
                 // reView: true でモードだけ評価し openFileURLs への追加は行わない
                 IllustratorApp.shared.openWithSameApp(fc: fc, reView: true, cmdKeyDown: cmdKeyDown)
@@ -315,35 +338,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.terminate(nil)
     }
 
-    // MARK: - 危険バージョン警告
-
-    private func showDangerousVersionAlerts() {
-        for ac in IllustratorApp.shared.appClassALL {
-            switch ac.version {
-            case "25.3.1":
-                showVersionAlert(
-                    title: String(format: NSLocalizedString("Danger! Illustrator CC 2021 v%@ is installed", comment: ""), ac.version),
-                    info: NSLocalizedString("There are serious bugs in v25.3.1. Please do not use this version.", comment: "")
-                )
-            case "22.0.0":
-                showVersionAlert(
-                    title: String(format: NSLocalizedString("Danger! Illustrator CC 2018 v%@ is installed", comment: ""), ac.version),
-                    info: NSLocalizedString("There is a serious bug in v22.0.0. Please update it now.", comment: "")
-                )
-            case "21.0.0", "21.0.1", "21.0.2":
-                showVersionAlert(
-                    title: String(format: NSLocalizedString("Danger! Illustrator CC 2017 v%@ is installed", comment: ""), ac.version),
-                    info: String(format: NSLocalizedString("There is a problem which causes garbled spot color names in v%@. Please update it now.", comment: ""), ac.version)
-                )
-            default:
-                break
-            }
-        }
-    }
-
     // MARK: - Helpers
 
     private func showIconImportedAlert(version: String) {
+        guard !Preferences.shared.doNotNotifyIconImport else { return }
         let name = FileInfo.versionName(version)
         let alert = NSAlert()
         alert.messageText = String(format: String(localized: "Icon files imported from Illustrator %@"), name)
@@ -354,19 +352,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showIconImportFailedAlert(version: String) {
+        guard !Preferences.shared.doNotNotifyIconImport else { return }
         let name = FileInfo.versionName(version)
         let alert = NSAlert()
         alert.messageText = String(format: String(localized: "Failed to import icon files from Illustrator %@"), name)
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: "OK")
-        NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
-    }
-
-    private func showVersionAlert(title: String, info: String) {
-        let alert = NSAlert()
-        alert.messageText = title
-        alert.informativeText = info
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
         NSApp.activate(ignoringOtherApps: true)

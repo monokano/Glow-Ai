@@ -255,8 +255,11 @@ class IllustratorApp {
 
     // MARK: - getIconFile
 
-    func getIconFile(onSuccess: ((String) -> Void)? = nil, onFailure: ((String) -> Void)? = nil) {
-        guard let latest = getMaximumVerAppClass() else { return }
+    /// onComplete は成功・失敗・中止のいずれの経路でも必ず最後に呼ばれる（後続処理の同期用）。
+    func getIconFile(onSuccess: ((String) -> Void)? = nil,
+                     onFailure: ((String) -> Void)? = nil,
+                     onComplete: (() -> Void)? = nil) {
+        guard let latest = getMaximumVerAppClass() else { onComplete?(); return }
         let resources = latest.appURL.appendingPathComponent("Contents/Resources")
         let fm = FileManager.default
 
@@ -265,24 +268,24 @@ class IllustratorApp {
         if !fm.fileExists(atPath: aiIcon.path) {
             aiIcon = resources.appendingPathComponent("AI_File_Icon.icns")
         }
-        guard fm.fileExists(atPath: aiIcon.path) else { return }
+        guard fm.fileExists(atPath: aiIcon.path) else { onComplete?(); return }
 
         // .ait アイコン
         var aitIcon = resources.appendingPathComponent("ai_cc_ai_pad.icns")
         if !fm.fileExists(atPath: aitIcon.path) {
             aitIcon = resources.appendingPathComponent("AI_TemplateFile_Icon.icns")
         }
-        guard fm.fileExists(atPath: aitIcon.path) else { return }
+        guard fm.fileExists(atPath: aitIcon.path) else { onComplete?(); return }
 
         // .eps アイコン
         var epsIcon = resources.appendingPathComponent("ai_eps.icns")
         if !fm.fileExists(atPath: epsIcon.path) {
             epsIcon = resources.appendingPathComponent("AI_EPSFile_Icon.icns")
         }
-        guard fm.fileExists(atPath: epsIcon.path) else { return }
+        guard fm.fileExists(atPath: epsIcon.path) else { onComplete?(); return }
 
         // コピー先（自分のバンドル Resources）
-        guard let myResources = Bundle.main.resourceURL else { return }
+        guard let myResources = Bundle.main.resourceURL else { onComplete?(); return }
         let destAI  = myResources.appendingPathComponent("ai_ai_primary.icns")
         let destAIT = myResources.appendingPathComponent("ai_cc_ai_pad.icns")
         let destEPS = myResources.appendingPathComponent("ai_eps.icns")
@@ -297,6 +300,7 @@ class IllustratorApp {
             Preferences.shared.appIconVersion = latest.version
             Preferences.shared.save()
             onSuccess?(latest.version)
+            onComplete?()
         } catch {
             // 通常コピー失敗 → AppleScript で管理者権限コピー
             copyIconFilesWithAdminPrivileges(
@@ -309,6 +313,7 @@ class IllustratorApp {
                 } else {
                     onFailure?(latest.version)
                 }
+                onComplete?()
             }
         }
     }

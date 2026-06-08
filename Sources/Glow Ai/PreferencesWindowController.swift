@@ -12,6 +12,7 @@ class PreferencesWindowController: NSWindowController {
     /// 常に通知ウインドウを表示する（conditionsForOpeningAiFile == 2）
     private let checkAlwaysNotify  = NSButton(checkboxWithTitle: "", target: nil, action: nil)
     private let checkAutoClaim     = NSButton(checkboxWithTitle: "", target: nil, action: nil)
+    private let checkSuppressIcon  = NSButton(checkboxWithTitle: "", target: nil, action: nil)
 
     // MARK: - Init
 
@@ -76,6 +77,13 @@ class PreferencesWindowController: NSWindowController {
         checkAutoClaim.translatesAutoresizingMaskIntoConstraints = false
         content.addSubview(checkAutoClaim)
 
+        // ── ファイルアイコン取込完了を通知しない
+        checkSuppressIcon.title = String(localized: "Do not notify about file icon import")
+        checkSuppressIcon.target = self
+        checkSuppressIcon.action = #selector(checkSuppressIconChanged)
+        checkSuppressIcon.translatesAutoresizingMaskIntoConstraints = false
+        content.addSubview(checkSuppressIcon)
+
         setupConstraints(content: content)
     }
 
@@ -91,10 +99,15 @@ class PreferencesWindowController: NSWindowController {
             checkAutoClaim.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
             checkAutoClaim.topAnchor.constraint(equalTo: checkAlwaysNotify.bottomAnchor, constant: 14),
 
+            // ファイルアイコン取込完了を通知しない
+            checkSuppressIcon.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
+            checkSuppressIcon.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
+            checkSuppressIcon.topAnchor.constraint(equalTo: checkAutoClaim.bottomAnchor, constant: 14),
+
             // セパレータ
             separator.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
             separator.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
-            separator.topAnchor.constraint(equalTo: checkAutoClaim.bottomAnchor, constant: 18),
+            separator.topAnchor.constraint(equalTo: checkSuppressIcon.bottomAnchor, constant: 18),
             separator.heightAnchor.constraint(equalToConstant: 1),
 
             // EPS チェック
@@ -124,6 +137,7 @@ class PreferencesWindowController: NSWindowController {
         checkTimeLimit.state    = prefs.useTimeLimit ? .on : .off
         slider.integerValue     = prefs.timeLimit
         checkAutoClaim.state    = prefs.autoClaimFileAssociations ? .on : .off
+        checkSuppressIcon.state = prefs.doNotNotifyIconImport ? .on : .off
         updateTimeLimitLabel()
     }
 
@@ -164,5 +178,10 @@ class PreferencesWindowController: NSWindowController {
         } else {
             AppDelegate.shared?.claimFileAssociationsToTopIllustrator()
         }
+    }
+
+    @objc private func checkSuppressIconChanged() {
+        Preferences.shared.doNotNotifyIconImport = (checkSuppressIcon.state == .on)
+        Preferences.shared.save()
     }
 }

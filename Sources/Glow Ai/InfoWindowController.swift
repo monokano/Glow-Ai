@@ -52,18 +52,6 @@ final class InfoViewModel: ObservableObject {
     var hasBalloon: Bool { !balloonMessage.isEmpty }
 
     var balloonMessage: String {
-        // 危険バージョン（モード7）：バージョンを含む動的メッセージ
-        if fc.infoWindowMode == 7 {
-            let ver = fc.determine_Created
-            let verName = FileInfo.versionName(ver)
-            let appVer = "Illustrator \(verName) (\(ver))"
-            if ver == "21.0.0" || ver == "21.0.1" || ver == "21.0.2" {
-                return String(format: String(localized: "This file is saved in %@.\nNote: spot color names may be garbled."), appVer)
-            } else {
-                return String(format: String(localized: "This file is saved in %@.\nPlease handle this carefully."), appVer)
-            }
-        }
-
         // モード 10（非Illustratorファイル）と 12（Illustrator編集機能保持PDF）は
         // 種類バルーン（kindBalloonMessage）で表示するためここでは扱わない
         let msgs: [Int: String] = [
@@ -511,9 +499,7 @@ struct InfoView: View {
         .badgePopover(vm.balloonMessage,
                       isPresented: .constant(vm.hasBalloon && balloonVisible),
                       edge: .top,
-                      color: vm.fc.infoWindowMode == 7
-                           ? NSColor(red: 0.698, green: 0.0, blue: 0.008, alpha: 1.0)
-                           : badgePopoverDefaultColor)
+                      color: badgePopoverDefaultColor)
         .badgePopover(vm.kindBalloonMessage,
                       isPresented: .constant(vm.hasKindBalloon && balloonVisible),
                       edge: .leading,
@@ -524,12 +510,7 @@ struct InfoView: View {
 
     @ViewBuilder
     private var alertBadge: some View {
-        let dangerous = ["25.3.1", "22.0.0", "21.0.0", "21.0.1", "21.0.2"]
-        if dangerous.contains(vm.fc.determine_Created) {
-            Image(systemName: "xmark.octagon.fill")
-                .symbolRenderingMode(.multicolor)
-                .font(.system(size: 36, weight: .bold))
-        } else if vm.fc.infoWindowMode > 0 {
+        if vm.fc.infoWindowMode > 0 {
             Image(systemName: "exclamationmark.triangle.fill")
                 .symbolRenderingMode(.multicolor)
                 .font(.system(size: 36, weight: .bold))
