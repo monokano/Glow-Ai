@@ -34,7 +34,7 @@ enum FileInfo {
         fc.finderInfo_Creator  = creator
 
         // PDF構造かどうかを早期判定し、xref を一度だけ解析して以降で共有する
-        let pdfXref: (root: Int, offsets: [Int: UInt64])? = {
+        let pdfXref: (root: Int, offsets: [Int: UInt64], compressed: [Int: (stm: Int, idx: Int)])? = {
             guard isPDFBased(url: resolved),
                   let fh = try? FileHandle(forReadingFrom: resolved) else { return nil }
             defer { try? fh.close() }
@@ -50,7 +50,8 @@ enum FileInfo {
                 if let fh = try? FileHandle(forReadingFrom: resolved) {
                     defer { try? fh.close() }
                     fc.xmp_CreatorTool = getCreatorToolViaXref(root: xref.root,
-                                                                offsets: xref.offsets, fh: fh)
+                                                                offsets: xref.offsets,
+                                                                compressed: xref.compressed, fh: fh)
                 }
             } else if ext != "ai" && ext != "ait" {
                 fc.xmp_CreatorTool = getCreatorTool(url: resolved)
@@ -99,7 +100,8 @@ enum FileInfo {
             } else if fc.kind == "PDF" && fc.isPhotoshopEditablePDF, let xref = pdfXref {
                 if let fh = try? FileHandle(forReadingFrom: resolved) {
                     defer { try? fh.close() }
-                    if let v = psVersionFromPhotoshopPDF(root: xref.root, offsets: xref.offsets, fh: fh) {
+                    if let v = psVersionFromPhotoshopPDF(root: xref.root, offsets: xref.offsets,
+                                                         compressed: xref.compressed, fh: fh) {
                         fc.psVersion = v
                     }
                 }
@@ -226,7 +228,8 @@ enum FileInfo {
     /// - D. それ以外 → `kind=""`
     ///
     /// Finder Creator/FileType（ART5/8BIM）は最初に短絡させる（クラシックMac互換）。
-    private static func getFileKind(fc: FileClass, url: URL, pdfXref: (root: Int, offsets: [Int: UInt64])?) -> String {
+    private static func getFileKind(fc: FileClass, url: URL,
+                                    pdfXref: (root: Int, offsets: [Int: UInt64], compressed: [Int: (stm: Int, idx: Int)])?) -> String {
         // Finder 情報での早期判定（クラシックMac互換）
         if fc.finderInfo_Creator == "ART5" {
             if ["TEXT", "PDF ", "AITm"].contains(fc.finderInfo_FileType) {
@@ -249,28 +252,39 @@ enum FileInfo {
                 fc.isIllustratorFile = true
                 return "PDF"
             }
-            // A-2. AIMetaData → 通常の.ai形式（PDF）
+            // Page[0] 辞書を解決する（ObjStm 内の圧縮オブジェクトも辿る）。
+            // 読めたら Illustrator/Photoshop の痕跡をその場で判定でき、無ければ確定でプレーンPDF。
+            // → プレーンPDFのたびにファイル全体を走査する A-2.5 を踏まずに済む（速度の要）。
             if let fh = try? FileHandle(forReadingFrom: url) {
                 defer { try? fh.close() }
-                if traverseToAIMetaDataObj(root: xref.root, offsets: xref.offsets, fh: fh) != nil {
-                    fc.isIllustratorFile = true
-                    // 先頭2KBのdc:formatで本物の.aitか判定（バイト列検索のみ・XMLパースなし）
-                    fc.isTemplate = isIllustratorTemplateFormat(url: url)
-                    return "Ai"
-                }
-            }
-            // A-2.6. Photoshop編集機能保持PDF（Page→/PieceInfo→/AdobePhotoshop）
-            if let fh = try? FileHandle(forReadingFrom: url) {
-                defer { try? fh.close() }
-                if pdfPageHasAdobePhotoshop(root: xref.root, offsets: xref.offsets, fh: fh) {
-                    fc.isPhotoshopEditablePDF = true
+                if let pageStr = firstPageDict(root: xref.root, offsets: xref.offsets,
+                                               compressed: xref.compressed, fh: fh) {
+                    // A-2. 通常の .ai 形式（PDF）：Page → /PieceInfo /Illustrator → /Private → /AIMetaData
+                    if let illusN  = pdfObjRef("Illustrator", in: pageStr),
+                       let illusStr = pdfObjStr(num: illusN, offsets: xref.offsets,
+                                                compressed: xref.compressed, fh: fh),
+                       let privN   = pdfObjRef("Private", in: illusStr),
+                       let privStr  = pdfObjStr(num: privN, offsets: xref.offsets,
+                                                compressed: xref.compressed, fh: fh),
+                       pdfObjRef("AIMetaData", in: privStr) != nil {
+                        fc.isIllustratorFile = true
+                        // 先頭2KBのdc:formatで本物の.aitか判定（バイト列検索のみ・XMLパースなし）
+                        fc.isTemplate = isIllustratorTemplateFormat(url: url)
+                        return "Ai"
+                    }
+                    // A-2.6. Photoshop編集機能保持PDF（Page → /PieceInfo /AdobePhotoshop）
+                    if pageStr.contains("/AdobePhotoshop") {
+                        fc.isPhotoshopEditablePDF = true
+                        return "PDF"
+                    }
+                    // Page 辞書を読めて Illustrator/Photoshop の痕跡なし → 確定でプレーンPDF（全走査しない）
                     return "PDF"
                 }
             }
-            // A-2.5. xref を辿れない場合の前方探索フォールバック。
-            //   ページ辞書が巨大で /PieceInfo が pdfObjStr の読み取り上限を超える、
-            //   または xref ストリーム形式等で traverse が失敗しても、
+            // A-2.5. Page 辞書を構造的に読めなかった場合のみの前方探索フォールバック。
+            //   巨大ページ辞書・壊れた参照など traverse が構造的に失敗しても、
             //   ファイル中に /AIMetaData があれば通常の .ai と判定する（WebApp AFVer と同挙動）。
+            //   ※ファイル全体を末尾まで読む。
             if fileContainsMarker(url: url, marker: "/AIMetaData") {
                 fc.isIllustratorFile = true
                 fc.isTemplate = isIllustratorTemplateFormat(url: url)
@@ -452,30 +466,20 @@ enum FileInfo {
         return String(ps[r])
     }
 
-    /// Page → /PieceInfo に /AdobePhotoshop があるか（Photoshop編集機能保持PDF判定）。
-    /// Illustrator編集PDF（/PieceInfo/Illustrator）と同じ機構の Photoshop 版。
-    private static func pdfPageHasAdobePhotoshop(root: Int, offsets: [Int: UInt64], fh: FileHandle) -> Bool {
-        guard let catStr   = pdfObjStr(num: root,    offsets: offsets, fh: fh),
-              let pagesN   = pdfObjRef("Pages",      in: catStr),
-              let pagesStr  = pdfObjStr(num: pagesN,  offsets: offsets, fh: fh),
-              let pageN    = pdfFirstKid(in: pagesStr),
-              let pageStr   = pdfObjStr(num: pageN,   offsets: offsets, fh: fh) else { return false }
-        return pageStr.contains("/AdobePhotoshop")
-    }
-
     /// Photoshop編集機能保持PDF の埋め込みデータから psVersion を取得する。
     /// Page → /PieceInfo /AdobePhotoshop << … /Private N 0 R >> → /StandardImageFileData（FlateDecode）→ cinf。
     /// /AdobePhotoshop はインライン辞書のため、その直後の /Private 参照を拾う。
-    private static func psVersionFromPhotoshopPDF(root: Int, offsets: [Int: UInt64], fh: FileHandle) -> String? {
-        guard let catStr   = pdfObjStr(num: root,    offsets: offsets, fh: fh),
+    private static func psVersionFromPhotoshopPDF(root: Int, offsets: [Int: UInt64],
+                                                  compressed: [Int: (stm: Int, idx: Int)], fh: FileHandle) -> String? {
+        guard let catStr   = pdfObjStr(num: root,   offsets: offsets, compressed: compressed, fh: fh),
               let pagesN   = pdfObjRef("Pages",      in: catStr),
-              let pagesStr  = pdfObjStr(num: pagesN,  offsets: offsets, fh: fh),
+              let pagesStr  = pdfObjStr(num: pagesN, offsets: offsets, compressed: compressed, fh: fh),
               let pageN    = pdfFirstKid(in: pagesStr),
-              let pageStr   = pdfObjStr(num: pageN,   offsets: offsets, fh: fh),
+              let pageStr   = pdfObjStr(num: pageN,  offsets: offsets, compressed: compressed, fh: fh),
               let apr      = pageStr.range(of: "/AdobePhotoshop") else { return nil }
         let afterAP = String(pageStr[apr.upperBound...])
         guard let privN    = pdfObjRef("Private", in: afterAP),
-              let privStr   = pdfObjStr(num: privN, offsets: offsets, fh: fh),
+              let privStr   = pdfObjStr(num: privN, offsets: offsets, compressed: compressed, fh: fh),
               let dataN    = pdfObjRef("StandardImageFileData", in: privStr),
               let inflated = readPDFObjStream(num: dataN, offsets: offsets, fh: fh) else { return nil }
         return parsePsVersionFromCinf(inflated)
@@ -570,7 +574,7 @@ enum FileInfo {
     // MARK: - PDF AIMetaData スキャン
 
     private static func scanVersionCommentsFromPDF(
-        xref: (root: Int, offsets: [Int: UInt64]), url: URL, fc: FileClass
+        xref: (root: Int, offsets: [Int: UInt64], compressed: [Int: (stm: Int, idx: Int)]), url: URL, fc: FileClass
     ) {
         let streamData: Data
         if let d = aiMetaDataStream(xref: xref, url: url) {
@@ -593,19 +597,19 @@ enum FileInfo {
     }
 
     private static func aiMetaDataStream(
-        xref: (root: Int, offsets: [Int: UInt64]), url: URL
+        xref: (root: Int, offsets: [Int: UInt64], compressed: [Int: (stm: Int, idx: Int)]), url: URL
     ) -> Data? {
         guard let fh = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? fh.close() }
-        guard let metaNum = traverseToAIMetaDataObj(root: xref.root,
-                                                    offsets: xref.offsets, fh: fh) else { return nil }
+        guard let metaNum = traverseToAIMetaDataObj(root: xref.root, offsets: xref.offsets,
+                                                    compressed: xref.compressed, fh: fh) else { return nil }
         return readPDFObjStream(num: metaNum, offsets: xref.offsets, fh: fh)
     }
 
     private static func getCreatorToolViaXref(
-        root: Int, offsets: [Int: UInt64], fh: FileHandle
+        root: Int, offsets: [Int: UInt64], compressed: [Int: (stm: Int, idx: Int)], fh: FileHandle
     ) -> String {
-        guard let catStr  = pdfObjStr(num: root, offsets: offsets, fh: fh),
+        guard let catStr  = pdfObjStr(num: root, offsets: offsets, compressed: compressed, fh: fh),
               let metaN   = pdfObjRef("Metadata", in: catStr),
               let metaOff = offsets[metaN] else { return "" }
 
@@ -637,7 +641,12 @@ enum FileInfo {
         return extractCreatorToolFromXMP(s)
     }
 
-    private static func parsePDFXref(fh: FileHandle) -> (root: Int, offsets: [Int: UInt64])? {
+    /// xref（クラシック相互参照テーブル／PDF 1.5+ の相互参照ストリーム）を解析して、
+    /// オブジェクト番号→ファイルオフセットの対応表（`offsets`：非圧縮オブジェクト）、
+    /// オブジェクト番号→(ObjStm番号, 内部index)の対応表（`compressed`：オブジェクトストリーム内の圧縮オブジェクト）、
+    /// および Root オブジェクト番号を返す。
+    private static func parsePDFXref(fh: FileHandle)
+        -> (root: Int, offsets: [Int: UInt64], compressed: [Int: (stm: Int, idx: Int)])? {
         guard let fileSize = try? fh.seekToEnd(), fileSize > 0 else { return nil }
         try? fh.seek(toOffset: fileSize - min(1024, fileSize))
         guard let tail = String(data: fh.readData(ofLength: 1024), encoding: .isoLatin1) else { return nil }
@@ -648,6 +657,7 @@ enum FileInfo {
         guard let startOff = xrefOff else { return nil }
 
         var offsets = [Int: UInt64]()
+        var compressed = [Int: (stm: Int, idx: Int)]()
         var root: Int?
         var queue = [startOff]
         var seen  = Set<UInt64>()
@@ -657,74 +667,322 @@ enum FileInfo {
             guard !seen.contains(off) else { continue }
             seen.insert(off)
 
-            // xref テーブルが 32KB を超える大容量ファイルに対応するため、
-            // "trailer" が見つかるまで 32KB ずつ読み足す
+            // クラシック相互参照テーブル（"xref" 始まり）か相互参照ストリーム（"N G obj" 始まり）かを
+            // 先頭16バイトで判別する。ストリーム形式をテーブルとして 32KB ずつ走査すると "trailer" が
+            // 無くファイル全体を読んでしまうため、走査前に分岐する。
             try? fh.seek(toOffset: off)
-            var xrefRaw = Data()
-            let xrefChunk = 32768
-            var trailerFound = false
-            while !trailerFound {
-                let chunk = fh.readData(ofLength: xrefChunk)
-                if chunk.isEmpty { break }
-                xrefRaw.append(chunk)
-                if xrefRaw.range(of: Data("trailer".utf8)) != nil { trailerFound = true }
-                if chunk.count < xrefChunk { break }
-            }
-            guard let s = String(data: xrefRaw, encoding: .isoLatin1),
-                  s.hasPrefix("xref") else { continue }
+            let peek = fh.readData(ofLength: 16)
+            let isClassicTable = (String(data: peek, encoding: .isoLatin1)?
+                .trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("xref")) ?? false
 
-            let sNorm = s.replacingOccurrences(of: "\r\n", with: "\n")
-                         .replacingOccurrences(of: "\r", with: "\n")
-            var iter = sNorm.components(separatedBy: "\n").makeIterator()
-            _ = iter.next()
-            outer: while let line = iter.next() {
-                let l = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                if l.hasPrefix("trailer") { break }
-                let parts = l.split(separator: " ")
-                guard parts.count == 2,
-                      let secStart = Int(parts[0]), let secCount = Int(parts[1]) else { continue }
-                var objID = secStart
-                for _ in 0..<secCount {
-                    guard let entry = iter.next() else { break outer }
-                    let ep = entry.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: " ")
-                    if ep.count >= 3, ep[2] == "n", let fileOff = UInt64(ep[0]) {
-                        offsets[objID] = fileOff
-                    }
-                    objID += 1
+            if isClassicTable {
+                // xref テーブルが 32KB を超える大容量ファイルに対応するため、
+                // "trailer" が見つかるまで 32KB ずつ読み足す
+                try? fh.seek(toOffset: off)
+                var xrefRaw = Data()
+                let xrefChunk = 32768
+                var trailerFound = false
+                while !trailerFound {
+                    let chunk = fh.readData(ofLength: xrefChunk)
+                    if chunk.isEmpty { break }
+                    xrefRaw.append(chunk)
+                    if xrefRaw.range(of: Data("trailer".utf8)) != nil { trailerFound = true }
+                    if chunk.count < xrefChunk { break }
                 }
-            }
+                guard let s = String(data: xrefRaw, encoding: .isoLatin1),
+                      s.hasPrefix("xref") else { continue }
 
-            if let tRange = s.range(of: "trailer") {
-                let ts = String(s[tRange.upperBound...])
-                if root == nil { root = pdfObjRef("Root", in: ts) }
-                if let prev = pdfIntVal("Prev", in: ts) { queue.append(UInt64(prev)) }
+                let sNorm = s.replacingOccurrences(of: "\r\n", with: "\n")
+                             .replacingOccurrences(of: "\r", with: "\n")
+                var iter = sNorm.components(separatedBy: "\n").makeIterator()
+                _ = iter.next()
+                outer: while let line = iter.next() {
+                    let l = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if l.hasPrefix("trailer") { break }
+                    let parts = l.split(separator: " ")
+                    guard parts.count == 2,
+                          let secStart = Int(parts[0]), let secCount = Int(parts[1]) else { continue }
+                    var objID = secStart
+                    for _ in 0..<secCount {
+                        guard let entry = iter.next() else { break outer }
+                        let ep = entry.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: " ")
+                        if ep.count >= 3, ep[2] == "n", let fileOff = UInt64(ep[0]) {
+                            if offsets[objID] == nil { offsets[objID] = fileOff }
+                        }
+                        objID += 1
+                    }
+                }
+
+                // trailer から Root / Prev（インクリメンタル更新・線形化）／XRefStm（ハイブリッド参照）を取得
+                if let tRange = s.range(of: "trailer") {
+                    let ts = String(s[tRange.upperBound...])
+                    if root == nil { root = pdfObjRef("Root", in: ts) }
+                    if let prev  = pdfIntVal("Prev",    in: ts) { queue.append(UInt64(prev)) }
+                    if let xstm  = pdfIntVal("XRefStm", in: ts) { queue.append(UInt64(xstm)) }
+                }
+            } else {
+                // PDF 1.5+ の相互参照ストリーム
+                parseXrefStreamSection(fh: fh, offset: off,
+                                       offsets: &offsets, compressed: &compressed,
+                                       root: &root, queue: &queue)
             }
         }
 
         guard let r = root else { return nil }
-        return (r, offsets)
+        return (r, offsets, compressed)
     }
 
-    private static func traverseToAIMetaDataObj(root: Int, offsets: [Int: UInt64], fh: FileHandle) -> Int? {
-        guard let catStr   = pdfObjStr(num: root,       offsets: offsets, fh: fh),
+    /// 相互参照ストリーム（PDF 1.5+ の圧縮 xref。`/Type /XRef`）を解析し、
+    /// type 1（非圧縮オブジェクト）のファイルオフセットを `offsets`、
+    /// type 2（オブジェクトストリーム内の圧縮オブジェクト）の所在 (ObjStm番号, 内部index) を `compressed` に加え、
+    /// 未確定なら `root` を、`/Prev` があれば `queue` を更新する。
+    private static func parseXrefStreamSection(
+        fh: FileHandle, offset: UInt64,
+        offsets: inout [Int: UInt64], compressed: inout [Int: (stm: Int, idx: Int)],
+        root: inout Int?, queue: inout [UInt64]
+    ) {
+        // 辞書部 + "stream" マーカーまでを読む（xref ストリームの辞書は小さい）
+        try? fh.seek(toOffset: offset)
+        let streamKey = Data("stream".utf8)
+        var head = Data()
+        while head.range(of: streamKey) == nil && head.count < 65536 {
+            let part = fh.readData(ofLength: 8192)
+            if part.isEmpty { break }
+            head.append(part)
+        }
+        guard let skr = head.range(of: streamKey),
+              let dict = String(data: head[head.startIndex..<skr.lowerBound], encoding: .isoLatin1)
+        else { return }
+
+        // 必須項目: /W [w1 w2 w3]
+        guard let w = pdfIntArray("W", in: dict), w.count >= 3, w[0] >= 0, w[1] >= 0, w[2] >= 0 else { return }
+        let (w1, w2, w3) = (w[0], w[1], w[2])
+        let rowLen = w1 + w2 + w3
+        guard rowLen > 0 else { return }
+
+        // /Index 無しなら [0 Size]
+        let size = pdfIntVal("Size", in: dict) ?? 0
+        let index = pdfIntArray("Index", in: dict) ?? [0, size]
+        guard index.count >= 2 else { return }
+
+        if root == nil { root = pdfObjRef("Root", in: dict) }
+        if let prev = pdfIntVal("Prev", in: dict) { queue.append(UInt64(prev)) }
+
+        // stream 本体（xref ストリームの /Length は直接整数）
+        guard let length = pdfIntVal("Length", in: dict), length > 0 else { return }
+        var bodyStart = skr.upperBound
+        if bodyStart < head.endIndex && head[bodyStart] == 0x0D { bodyStart = head.index(after: bodyStart) }
+        if bodyStart < head.endIndex && head[bodyStart] == 0x0A { bodyStart = head.index(after: bodyStart) }
+        let bodyFileOffset = offset + UInt64(bodyStart - head.startIndex)
+        try? fh.seek(toOffset: bodyFileOffset)
+        let rawStream = fh.readData(ofLength: length)
+        guard rawStream.count == length else { return }
+
+        let hasFilter = dict.contains("/FlateDecode")
+        guard var decoded = hasFilter ? zlibInflate(rawStream) : rawStream else { return }
+
+        // PNG プレディクタ（Predictor >= 10）。Columns = 1行のバイト数（= w1+w2+w3）
+        let predictor = pdfIntVal("Predictor", in: dict) ?? 1
+        if predictor >= 10 {
+            let columns = pdfIntVal("Columns", in: dict) ?? rowLen
+            guard let unfiltered = applyPNGPredictor(decoded, columns: columns) else { return }
+            decoded = unfiltered
+        }
+        guard decoded.count >= rowLen else { return }
+
+        // 行を /Index の (開始オブジェクト番号, 個数) ペアに従って割り当てる
+        let bytes = [UInt8](decoded)
+        func be(_ start: Int, _ n: Int) -> UInt64 {
+            var v: UInt64 = 0
+            for i in 0..<n { v = (v << 8) | UInt64(bytes[start + i]) }
+            return v
+        }
+        let totalRows = bytes.count / rowLen
+        var rowNo = 0
+        var p = 0
+        while p + 1 < index.count {
+            let startObj = index[p]
+            let count = index[p + 1]
+            p += 2
+            for k in 0..<count {
+                if rowNo >= totalRows { return }
+                let base = rowNo * rowLen
+                let type = (w1 == 0) ? 1 : be(base, w1)   // w1==0 のときの既定 type は 1
+                let objNum = startObj + k
+                if type == 1 {
+                    if offsets[objNum] == nil { offsets[objNum] = be(base + w1, w2) }
+                } else if type == 2 {
+                    // type 2: field2 = 収容している ObjStm のオブジェクト番号, field3 = その中の index
+                    if offsets[objNum] == nil && compressed[objNum] == nil {
+                        compressed[objNum] = (stm: Int(be(base + w1, w2)), idx: Int(be(base + w1 + w2, w3)))
+                    }
+                }
+                rowNo += 1
+            }
+        }
+    }
+
+    /// PDF プレディクタ（PNG, Predictor 10〜15）を解除して各行 `columns` バイトの素データを返す。
+    /// 入力は「1バイトのフィルタタイプ + columns バイト」を1行とする。
+    /// xref ストリームは Colors=1 / BitsPerComponent=8 のため bytes-per-pixel = 1。
+    private static func applyPNGPredictor(_ data: Data, columns: Int) -> Data? {
+        guard columns > 0 else { return nil }
+        let bpp = 1
+        let rowLen = columns + 1
+        let src = [UInt8](data)
+        guard src.count >= rowLen else { return nil }
+
+        var prev = [UInt8](repeating: 0, count: columns)
+        var out = [UInt8]()
+        out.reserveCapacity((src.count / rowLen) * columns)
+
+        var i = 0
+        while i + rowLen <= src.count {
+            let filter = src[i]
+            var cur = Array(src[(i + 1)..<(i + rowLen)])
+            switch filter {
+            case 0: break                                   // None
+            case 1:                                          // Sub
+                for k in bpp..<columns { cur[k] = cur[k] &+ cur[k - bpp] }
+            case 2:                                          // Up
+                for k in 0..<columns { cur[k] = cur[k] &+ prev[k] }
+            case 3:                                          // Average
+                for k in 0..<columns {
+                    let left = k >= bpp ? Int(cur[k - bpp]) : 0
+                    cur[k] = cur[k] &+ UInt8((left + Int(prev[k])) / 2)
+                }
+            case 4:                                          // Paeth
+                for k in 0..<columns {
+                    let a = k >= bpp ? Int(cur[k - bpp]) : 0
+                    let b = Int(prev[k])
+                    let c = k >= bpp ? Int(prev[k - bpp]) : 0
+                    let pp = a + b - c
+                    let pa = abs(pp - a), pb = abs(pp - b), pc = abs(pp - c)
+                    let pred = (pa <= pb && pa <= pc) ? a : (pb <= pc ? b : c)
+                    cur[k] = cur[k] &+ UInt8(pred & 0xff)
+                }
+            default: return nil
+            }
+            out.append(contentsOf: cur)
+            prev = cur
+            i += rowLen
+        }
+        return Data(out)
+    }
+
+    /// `/Key [ n1 n2 … ]`（W や Index）の整数配列を返す。キーは直後が非英数字のもののみ一致させる。
+    private static func pdfIntArray(_ key: String, in s: String) -> [Int]? {
+        let token = "/" + key
+        var searchStart = s.startIndex
+        while let kr = s.range(of: token, range: searchStart..<s.endIndex) {
+            // キー名の直後が英数字なら別キーの前方一致（例 /W が /Width に当たる）なので次を探す
+            let nextOK = kr.upperBound == s.endIndex || !(s[kr.upperBound].isLetter || s[kr.upperBound].isNumber)
+            if nextOK {
+                let after = s[kr.upperBound...]
+                guard let lb = after.firstIndex(of: "["),
+                      let rb = after[after.index(after: lb)...].firstIndex(of: "]") else { return nil }
+                let inner = after[after.index(after: lb)..<rb]
+                let nums = inner.split { !($0.isNumber) }.compactMap { Int($0) }
+                return nums.isEmpty ? nil : nums
+            }
+            searchStart = kr.upperBound
+        }
+        return nil
+    }
+
+    private static func traverseToAIMetaDataObj(root: Int, offsets: [Int: UInt64],
+                                                compressed: [Int: (stm: Int, idx: Int)], fh: FileHandle) -> Int? {
+        guard let catStr   = pdfObjStr(num: root,       offsets: offsets, compressed: compressed, fh: fh),
               let pagesN   = pdfObjRef("Pages",          in: catStr),
-              let pagesStr = pdfObjStr(num: pagesN,      offsets: offsets, fh: fh),
+              let pagesStr = pdfObjStr(num: pagesN,      offsets: offsets, compressed: compressed, fh: fh),
               let pageN    = pdfFirstKid(in: pagesStr),
-              let pageStr  = pdfObjStr(num: pageN,       offsets: offsets, fh: fh),
+              let pageStr  = pdfObjStr(num: pageN,       offsets: offsets, compressed: compressed, fh: fh),
               let illusN   = pdfObjRef("Illustrator",    in: pageStr),
-              let illusStr = pdfObjStr(num: illusN,      offsets: offsets, fh: fh),
+              let illusStr = pdfObjStr(num: illusN,      offsets: offsets, compressed: compressed, fh: fh),
               let privN    = pdfObjRef("Private",        in: illusStr),
-              let privStr  = pdfObjStr(num: privN,       offsets: offsets, fh: fh),
+              let privStr  = pdfObjStr(num: privN,       offsets: offsets, compressed: compressed, fh: fh),
               let metaN    = pdfObjRef("AIMetaData",     in: privStr) else { return nil }
         return metaN
     }
 
-    private static func pdfObjStr(num: Int, offsets: [Int: UInt64], fh: FileHandle) -> String? {
-        guard let offset = offsets[num] else { return nil }
+    /// Catalog → Pages → Page[0] の辞書を解決して返す（オブジェクトを構造的に読めなければ nil）。
+    /// 読めた場合はその場で `/Illustrator`・`/AdobePhotoshop` の有無を判定でき、無ければ確定でプレーンPDF。
+    /// → プレーンPDFのたびに全ファイル走査（fileContainsMarker）する必要がなくなる。
+    /// `compressed`（ObjStm 内の圧縮オブジェクト）も辿るため、相互参照ストリーム形式のPDFでも解決できる。
+    private static func firstPageDict(root: Int, offsets: [Int: UInt64],
+                                      compressed: [Int: (stm: Int, idx: Int)], fh: FileHandle) -> String? {
+        guard let catStr  = pdfObjStr(num: root,   offsets: offsets, compressed: compressed, fh: fh),
+              let pagesN  = pdfObjRef("Pages",      in: catStr),
+              let pagesStr = pdfObjStr(num: pagesN, offsets: offsets, compressed: compressed, fh: fh),
+              let pageN   = pdfFirstKid(in: pagesStr),
+              let pageStr  = pdfObjStr(num: pageN,  offsets: offsets, compressed: compressed, fh: fh)
+        else { return nil }
+        return pageStr
+    }
+
+    /// オブジェクト N の辞書部を文字列で返す。
+    ///
+    /// 既定は 4KB 読み（小さな辞書はこれで完結）。ただし巨大な Page 辞書（大量の Resources 参照を
+    /// 持ち、末尾に `/PieceInfo<</Illustrator …>>` が来る .ai）では 4KB 窓に /PieceInfo が収まらず
+    /// xref 辿りが失敗していた。最初の 4KB に `endobj` が無ければ巨大辞書とみなし、`endobj` に達するまで
+    /// （上限 maxBytes まで）追加読みして辞書全体を確実に含める。
+    /// 対象（Catalog/Pages/Page/Illustrator/Private）はいずれもストリームを持たない純辞書のため、
+    /// `endobj` までで辞書全体が入る。
+    ///
+    /// `offsets` に無い番号は `compressed`（ObjStm 内の圧縮オブジェクト）から解決する。
+    /// 相互参照ストリーム形式のPDFでは Catalog/Pages/Page が ObjStm に入ることが多いため、
+    /// これにより構造 traverse が成立し、全ファイル走査フォールバックを避けられる。
+    private static func pdfObjStr(num: Int, offsets: [Int: UInt64],
+                                  compressed: [Int: (stm: Int, idx: Int)] = [:], fh: FileHandle,
+                                  maxBytes: Int = 256 * 1024) -> String? {
+        if let offset = offsets[num] {
+            try? fh.seek(toOffset: offset)
+            let endMarker = Data("endobj".utf8)
+            var data = fh.readData(ofLength: 4096)
+            while data.range(of: endMarker) == nil && data.count < maxBytes {
+                let part = fh.readData(ofLength: 8192)
+                if part.isEmpty { break }
+                data.append(part)
+            }
+            guard let s = String(data: data, encoding: .isoLatin1),
+                  s.hasPrefix("\(num) 0 obj") else { return nil }
+            return s
+        }
+        // 非圧縮テーブルに無い → オブジェクトストリーム（ObjStm）内の圧縮オブジェクトを解決
+        if let loc = compressed[num] {
+            return objStrFromObjStm(stmNum: loc.stm, index: loc.idx, offsets: offsets, fh: fh)
+        }
+        return nil
+    }
+
+    /// オブジェクトストリーム（`/Type /ObjStm`）内の index 番目のオブジェクト本体（辞書文字列）を返す。
+    /// ObjStm 自体は非圧縮（`offsets` にオフセットあり）。内部は「N 組の『objNum 相対オフセット』ヘッダ
+    /// ＋ `/First` 以降に各オブジェクト本体を連結」した構造（PDF 7.5.7）。返す文字列は "N 0 obj" 接頭辞を
+    /// 持たないが、呼び出し側（pdfObjRef / pdfFirstKid / contains）は辞書内をパターン検索するだけなので問題ない。
+    private static func objStrFromObjStm(stmNum: Int, index: Int,
+                                         offsets: [Int: UInt64], fh: FileHandle) -> String? {
+        guard index >= 0, let offset = offsets[stmNum] else { return nil }
         try? fh.seek(toOffset: offset)
-        guard let s = String(data: fh.readData(ofLength: 4096), encoding: .isoLatin1),
-              s.hasPrefix("\(num) 0 obj") else { return nil }
-        return s
+        let header = fh.readData(ofLength: 8192)
+        guard let dictEnd = header.range(of: Data("stream".utf8))?.lowerBound,
+              let dict = String(data: header[header.startIndex..<dictEnd], encoding: .isoLatin1),
+              dict.contains("/ObjStm"),
+              let first = pdfIntVal("First", in: dict),
+              let inflated = readPDFObjStream(num: stmNum, offsets: offsets, fh: fh) else { return nil }
+        let bytes = [UInt8](inflated)
+        guard first > 0, first <= bytes.count else { return nil }
+        // ヘッダ（先頭 first バイト）: 空白区切りの整数列 objNum0 off0 objNum1 off1 …
+        let headerNums = String(decoding: bytes[0..<first], as: UTF8.self)
+            .split(whereSeparator: { $0 == " " || $0 == "\n" || $0 == "\r" || $0 == "\t" })
+            .compactMap { Int($0) }
+        let offPos = index * 2 + 1
+        guard offPos < headerNums.count else { return nil }
+        let startRel = headerNums[offPos]
+        let endRel   = (offPos + 2 < headerNums.count) ? headerNums[offPos + 2] : (bytes.count - first)
+        let start = first + startRel
+        let end   = min(first + endRel, bytes.count)
+        guard startRel >= 0, start <= end, end <= bytes.count else { return nil }
+        return String(decoding: bytes[start..<end], as: UTF8.self)
     }
 
     private static func readPDFObjStream(num: Int, offsets: [Int: UInt64], fh: FileHandle) -> Data? {
