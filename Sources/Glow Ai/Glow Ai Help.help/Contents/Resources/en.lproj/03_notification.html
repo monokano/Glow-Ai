@@ -18,7 +18,11 @@
 <p>Shows the icon of the dropped file. A warning badge may appear above the icon, and a kind badge may appear to its left.</p>
 
 <h3>Badge</h3>
-<p>Displays a warning message or file type label when needed.</p>
+<p>Displays a warning message or file type label when needed. The warning badge above the icon marks a file that needs attention, and the kind badge to its left shows the file type.</p>
+
+<h3>EPS files not from Illustrator or Photoshop</h3>
+<p>When you drop an EPS file that was created by neither Illustrator nor Photoshop (for example by Ghostscript, CorelDRAW, Inkscape, Acrobat, or InDesign), the kind badge shows the producer along with the type, like "EPS file - 〔producer〕 (.eps)". The producer is read from the first "%%Creator" line inside the file. If it cannot be read, "Unknown producer" is shown instead.</p>
+<p>These EPS files always show a red badge regardless of their extension. Because it is difficult to tell whether they are vector or raster, the application list is left empty.</p>
 
 <h3>Filename</h3>
 <p>The name of the dropped file.</p>

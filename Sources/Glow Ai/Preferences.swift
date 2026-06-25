@@ -44,8 +44,8 @@ class Preferences {
     /// 通知ウインドウの幅
     var infoWindowWidth: Int = 450
 
-    /// 詳細情報シートの幅
-    var moreInfoSheetWidth: Int = 450
+    /// 詳細情報シートの幅（最小550）
+    var moreInfoSheetWidth: Int = 550
 
     /// アイコン更新判定用（非リリースバージョン番号）
     var nonReleaseVersion: Int = 0
@@ -85,7 +85,7 @@ class Preferences {
         autoClaimFileAssociations    = d.object(forKey: Key.autoClaimFileAssociations.rawValue)    as? Bool ?? true
         doNotNotifyIconImport        = d.object(forKey: Key.doNotNotifyIconImport.rawValue)        as? Bool ?? false
         infoWindowWidth              = d.object(forKey: Key.infoWindowWidth.rawValue)              as? Int  ?? 450
-        moreInfoSheetWidth           = d.object(forKey: Key.moreInfoSheetWidth.rawValue)           as? Int  ?? 450
+        moreInfoSheetWidth           = d.object(forKey: Key.moreInfoSheetWidth.rawValue)           as? Int  ?? 550
         nonReleaseVersion            = d.object(forKey: Key.nonReleaseVersion.rawValue)            as? Int  ?? 0
         appIconVersion               = d.string(forKey: Key.appIconVersion.rawValue)               ?? ""
     }

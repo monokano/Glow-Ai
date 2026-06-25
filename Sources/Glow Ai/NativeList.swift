@@ -100,9 +100,14 @@ struct NativeList<Item: Identifiable>: NSViewRepresentable {
         tv.focusRingType = .none
         tv.rowHeight = rowHeight
         tv.allowsMultipleSelection = false
+        // 伸縮スタイルの決定：
+        //  - 最終列 fitLastColumn → 従来どおり最終列のみ伸縮（lastColumnOnly）
+        //  - それ以外で resizable 列がある → sequential でその列（例：中間の Value 列）だけ伸縮させ、
+        //    右側の固定列（µs 等）は幅を保つ
+        //  - どちらでもない → 自動リサイズなし
         tv.columnAutoresizingStyle = columns.last?.fitLastColumn == true
             ? .lastColumnOnlyAutoresizingStyle
-            : .noColumnAutoresizing
+            : (columns.contains { $0.resizable } ? .sequentialColumnAutoresizingStyle : .noColumnAutoresizing)
         tv.allowsColumnReordering = false
         tv.target = context.coordinator
         tv.doubleAction = #selector(Coordinator.doubleClicked(_:))

@@ -68,8 +68,8 @@ class FileClass {
     var isKindDangerous: Bool {
         let ext = file?.pathExtension.lowercased() ?? ""
         if kind == "PDF"                              { return ext != "pdf" }  // A1 / A1b / A3
-        if kind == "Ai"  && isIllustratorFile && isTemplate { return ext != "ai"  }  // A2b
-        if kind == "Ai"  && isIllustratorFile         { return ext != "ait" }  // A2
+        if kind == "Ai"  && isIllustratorFile && isTemplate { return ext != "ai" && ext != "ait" }  // A2b
+        if kind == "Ai"  && isIllustratorFile         { return ext != "ai" && ext != "ait" }  // A2
         if kind == "EPS" && isIllustratorFile         { return ext != "eps" }  // B1
         if kind == "EPS" && appName == "Photoshop"    { return ext != "eps" }  // B2
         if kind == "PSD"                              { return ext != "psd" }  // C1

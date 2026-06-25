@@ -236,17 +236,6 @@
         }
       }
     },
-    "Failed to import icon files from Illustrator %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Illustrator %@ からアイコンファイルの取り込みができませんでした"
-          }
-        }
-      }
-    },
     "Filename" : {
       "localizations" : {
         "ja" : {
@@ -336,6 +325,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "無視して開く"
+          }
+        }
+      }
+    },
+    "EPS format - %@ (.eps)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EPS 形式 - %@ (.eps)"
+          }
+        }
+      }
+    },
+    "Unknown producer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生成元不明"
+          }
+        }
+      }
+    },
+    "EPS file - %@ (.eps)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EPS 形式\n- %@ (.eps)"
           }
         }
       }

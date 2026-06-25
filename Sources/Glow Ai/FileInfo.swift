@@ -108,6 +108,14 @@ enum FileInfo {
             }
         }
 
+        // 8. Illustrator/Photoshop いずれでもない EPS は最初の %%Creator（生成元）を creator1 にセット。
+        //    isIllustratorFile=false ではバージョンスキャンが走らないため、既読16KBヘッダから1行抽出して補う。
+        if fc.kind == "EPS" && !fc.isIllustratorFile && fc.appName != "Photoshop" {
+            let tc = Date()
+            fc.creator1 = epsCreatorLine(url: resolved) ?? ""
+            fc.time_Creator1 = microsecondsString(from: tc)
+        }
+
         fc.time_TotalSeconds = String(format: "%.3f", Date().timeIntervalSince(startTotal))
         return fc
     }
@@ -352,6 +360,22 @@ enum FileInfo {
             try? fh.seek(toOffset: 0)
         }
         return String(data: fh.readData(ofLength: length), encoding: .isoLatin1)
+    }
+
+    /// EPS の PS ヘッダ（先頭16KB）から %%Creator 行の値を抽出する（生成元の表示用）。
+    /// 例: `%%Creator: GPL Ghostscript 923 (eps2write)` → "GPL Ghostscript 923 (eps2write)"
+    private static func epsCreatorLine(url: URL) -> String? {
+        guard let ps = epsReadPSHeader(url: url, length: 16384),
+              let regex = try? NSRegularExpression(pattern: #"%%Creator:[ \t]*(.+)"#) else { return nil }
+        let range = NSRange(ps.startIndex..., in: ps)
+        guard let m = regex.firstMatch(in: ps, range: range),
+              let r = Range(m.range(at: 1), in: ps) else { return nil }
+        var value = String(ps[r]).trimmingCharacters(in: .whitespaces)
+        // PS 文字列形式 "(value)" の外側カッコを除去（内側カッコ eps2write 等は保持）。
+        if value.hasPrefix("(") && value.hasSuffix(")") {
+            value = String(value.dropFirst().dropLast())
+        }
+        return value.isEmpty ? nil : value
     }
 
     private static func epsIsIllustrator(url: URL) -> Bool {

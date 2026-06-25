@@ -90,6 +90,13 @@ final class InfoViewModel: ObservableObject {
             return ext == "eps" ? "" : String(localized: "Illustrator EPS format (.eps)")
         case ("EPS", false, "Photoshop"):
             return String(localized: "Photoshop EPS format (.eps)")
+        case ("EPS", false, _):
+            // Illustrator/Photoshop いずれでもない EPS。B1/B2 と違い ext=="eps" でも空にせず常に返す（＝常に赤）。
+            // バルーンは PDF 同様に改行入りキー（生成元が長い場合に折り返す）。空なら「生成元不明」。
+            let producer = fc.creator1.isEmpty
+                ? String(localized: "Unknown producer")
+                : fc.creator1
+            return String(format: String(localized: "EPS file - %@ (.eps)"), producer)
         case ("PSD", _, _):
             return String(localized: "Photoshop format (.psd)")
         case ("PSB", _, _):
@@ -781,6 +788,13 @@ struct MoreInfoView: View {
             return (String(localized: "Illustrator EPS format (.eps)"),           ext != "eps")
         case ("EPS", false, "Photoshop"):
             return (String(localized: "Photoshop EPS format (.eps)"),             ext != "eps")
+        case ("EPS", false, _):
+            // Illustrator/Photoshop いずれでもない EPS（Ghostscript 等）。生成元（creator1）を畳み込む。
+            // 空（%%Creator なし）なら「生成元不明」。両フラグ false ＝拡張子を問わず常に赤。
+            let producer = fc.creator1.isEmpty
+                ? String(localized: "Unknown producer")
+                : fc.creator1
+            return (String(format: String(localized: "EPS format - %@ (.eps)"), producer), true)
         case ("PSD", _, _):
             return (String(localized: "Photoshop format (.psd)"),                 ext != "psd")
         case ("PSB", _, _):
@@ -836,7 +850,7 @@ struct MoreInfoView: View {
             NativeList(
                 columns: [
                     NativeListColumn(String(localized: "Info"),  { $0.label }, isBold: { $0.isBold }, minWidth: 198, width: 198),
-                    NativeListColumn(String(localized: "Value"), { $0.value }, isBold: { $0.isBold || $0.isAlert }, textColor: { $0.isAlert ? .systemRed : .labelColor }, minWidth: 227, width: 227),
+                    NativeListColumn(String(localized: "Value"), { $0.value }, isBold: { $0.isBold || $0.isAlert }, textColor: { $0.isAlert ? .systemRed : .labelColor }, resizable: true, minWidth: 227, width: 227),
                     NativeListColumn(String(localized: "µs"),    { $0.time },  minWidth: 60, width: 79, alignment: .right),
                 ],
                 items: rows,
@@ -947,7 +961,7 @@ struct MoreInfoView: View {
             .padding(.top, -8)
             .frame(height: 119)
         }
-        .frame(width: 550, height: 382)
+        .frame(minWidth: 550, maxWidth: .infinity, minHeight: 382, maxHeight: 382)   // 幅のみリサイズ可。高さは固定
     }
 }
 
@@ -961,13 +975,14 @@ class MoreInfoWindowController: NSWindowController {
         self.fc = fc
         let win = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 550, height: 382),
-            styleMask: [.titled],
+            styleMask: [.titled, .resizable],
             backing: .buffered,
             defer: false
         )
         win.isReleasedWhenClosed = false
+        // 幅のみリサイズ可・高さは 382 に固定（min と max の高さを揃える）
         win.minSize = NSSize(width: 550, height: 382)
-        win.maxSize = NSSize(width: 550, height: 382)
+        win.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: 382)
         super.init(window: win)
     }
 
@@ -980,11 +995,17 @@ class MoreInfoWindowController: NSWindowController {
         }, onDetected: { [weak self] newFC in
             self?.onDetected?(newFC)
         }))
+        // 記憶した幅を復元（最小550でクランプ。高さは382固定）
+        let savedWidth = max(550, CGFloat(Preferences.shared.moreInfoSheetWidth))
+        win.setContentSize(NSSize(width: savedWidth, height: 382))
         parent.beginSheet(win)
     }
 
     private func closeSheet() {
         guard let win = window, let parent = win.sheetParent else { return }
+        // 現在の幅を記憶（infoWindowWidth と同じパターン）
+        Preferences.shared.moreInfoSheetWidth = Int(win.frame.width)
+        Preferences.shared.save()
         parent.endSheet(win)
     }
 }
