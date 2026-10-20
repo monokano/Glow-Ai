@@ -154,7 +154,7 @@ final class InfoViewModel: ObservableObject {
             for ac in IllustratorApp.shared.appClassALLIncludeBeta {
                 let appMajor = Int(ac.version.components(separatedBy: ".").first ?? "") ?? 0
                 let folder = ac.appURL.deletingLastPathComponent().lastPathComponent
-                let isBeta = folder.contains("Beta") || folder.contains("Prerelease")
+                let isBeta = ac.isBeta
                 var canOpen = false
                 if !isBeta {
                     canOpen = prefs.allowOpeningInHigherVersion ? appMajor >= targetMajor : appMajor == targetMajor
@@ -205,8 +205,10 @@ final class InfoViewModel: ObservableObject {
         if fc.isIllustratorFile {
             let myMajor = fc.determine_Created.split(separator: ".").first.map(String.init) ?? ""
 
-            // 1. 完全3パート一致（危険バージョン除く）
+            // 1. 完全3パート一致（危険バージョン除く、Beta・Prerelease・Debug 除く）
+            // Debug 版は正規版とバージョン番号が同一のため、除外しないとグレーアウト行が初期選択になる
             for row in tableRows {
+                guard !row.isBeta, row.canOpen else { continue }
                 let ver3 = row.version.split(separator: ".").prefix(3).joined(separator: ".")
                 if ver3 == fc.determine_Created && row.version != "22.0.0" { return row.id }
             }
@@ -217,7 +219,8 @@ final class InfoViewModel: ObservableObject {
                     && row.version.split(separator: ".").first.map(String.init) == myMajor
             }) { return row.id }
         }
-        return tableRows.first(where: { $0.isBooted })?.id
+        // 3. 起動中のアプリ（Beta・Prerelease・Debug は開けないので選ばない）
+        return tableRows.first(where: { $0.isBooted && !$0.isBeta })?.id
     }
 
     func update(fc newFC: FileClass) {

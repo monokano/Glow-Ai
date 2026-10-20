@@ -21,6 +21,8 @@ class IllustratorAppClass {
     var version: String = ""
     /// ソート用数値（major*1e9 + minor*1e6 + patch*1e3 + build）
     var versionDouble: Double = 0
+    /// 正規版以外（(Beta)・Prerelease・Debug など）。getAppALL で isBetaFolder により決まる
+    var isBeta: Bool = false
     var isBooted: Bool = false
     var icon: NSImage?
     /// このアプリで開くファイルの URL 配列
@@ -38,9 +40,9 @@ class IllustratorApp {
     static let shared = IllustratorApp()
     private init() {}
 
-    /// 正規版のみ（Beta・Prerelease 除外）、バージョン昇順
+    /// 正規版のみ（isBeta の版を除外）、バージョン昇順
     var appClassALL: [IllustratorAppClass] = []
-    /// Beta・Prerelease を含む全アプリ、バージョン昇順
+    /// 正規版以外（(Beta)・Prerelease・Debug など）も含む全アプリ、バージョン昇順（同じバージョンなら正規版が先）
     var appClassALLIncludeBeta: [IllustratorAppClass] = []
 
     /// バージョン照合用（メジャーのみ）例: ["25", "26"]
@@ -70,22 +72,21 @@ class IllustratorApp {
             fm.fileExists(atPath: entry.path, isDirectory: &isDir)
             guard isDir.boolValue else { continue }
 
-            let isBeta = entry.lastPathComponent.contains("Beta") ||
-                         entry.lastPathComponent.contains("Prerelease")
-
-            let appBundleURL = entry.appendingPathComponent("Adobe Illustrator.app")
-            guard fm.fileExists(atPath: appBundleURL.path) else { continue }
+            // Illustrator.app を探す（Debug 版などバンドル名が違う場合にも対応）
+            guard let appBundleURL = findIllustratorApp(in: entry),
+                  fm.fileExists(atPath: appBundleURL.path) else { continue }
 
             let ac = IllustratorAppClass(appURL: appBundleURL)
             ac.version = getAppFullVersion(appBundle: appBundleURL)
             ac.versionDouble = versionToDouble(ac.version)
+            ac.isBeta = IllustratorApp.isBetaFolder(entry.lastPathComponent)
             ac.isBooted = isAppBooted(appURL: appBundleURL)
             ac.icon = NSWorkspace.shared.icon(forFile: appBundleURL.path)
                         .resized(to: NSSize(width: 18, height: 18))
 
             appClassALLIncludeBeta.append(ac)
 
-            if !isBeta {
+            if !ac.isBeta {
                 appClassALL.append(ac)
                 let parts = ac.version.components(separatedBy: ".")
                 appVerAllMajorOnly.append(parts.first ?? "")
@@ -94,8 +95,32 @@ class IllustratorApp {
             }
         }
 
-        appClassALL.sort { $0.versionDouble < $1.versionDouble }
-        appClassALLIncludeBeta.sort { $0.versionDouble < $1.versionDouble }
+        appClassALL.sort { IllustratorApp.isAscending($0, $1) }
+        appClassALLIncludeBeta.sort { IllustratorApp.isAscending($0, $1) }
+    }
+
+    /// 正規版のフォルダ名は「Adobe Illustrator」＋次のどれかだけのもの。
+    ///   数字（"2026"）／ CC ＋年号（"CC 2019"）／ CC 単体 ／ CS 系（"CS6" "CS5.1" "CS"）
+    /// それ以外（(Beta)・Prerelease・Debug・Finder での複製など）はすべて Beta 扱いにする。
+    /// Debug 版は Info.plist が正規版と同一のため、フォルダ名以外に手がかりがない。
+    /// 年号の無い CC・CS 系は 32bit で現行 macOS では起動できないが、念のため正規版として扱う。
+    private static func isBetaFolder(_ folderName: String) -> Bool {
+        folderName.range(of: "^Adobe Illustrator (CC( [0-9.]+)?|CS[0-9.]*|[0-9.]+)$",
+                         options: .regularExpression) == nil
+    }
+
+    /// バージョン昇順。同じバージョンなら正規版を先に並べる
+    /// （Debug 版や複製は正規版と同じバージョンになるため、並び順をフォルダの列挙順任せにしない）
+    private static func isAscending(_ a: IllustratorAppClass, _ b: IllustratorAppClass) -> Bool {
+        if a.versionDouble != b.versionDouble { return a.versionDouble < b.versionDouble }
+        return !a.isBeta && b.isBeta
+    }
+
+    private func findIllustratorApp(in folder: URL) -> URL? {
+        let fm = FileManager.default
+        guard let contents = try? fm.contentsOfDirectory(
+            at: folder, includingPropertiesForKeys: nil, options: []) else { return nil }
+        return contents.first { $0.pathExtension == "app" && $0.lastPathComponent.contains("Illustrator") }
     }
 
     // MARK: - getAppALLRefresh（起動状態だけ更新）
@@ -122,7 +147,7 @@ class IllustratorApp {
 
         // Illustrator.app がインストールされていない
         if appClassALL.isEmpty {
-            // Beta/Prerelease のみインストール済みの場合は通知ウィンドウを表示（バルーンなし）
+            // Beta 扱いの版（正規版以外）のみインストール済みの場合は通知ウィンドウを表示（バルーンなし）
             fc.infoWindowMode = appClassALLIncludeBeta.isEmpty ? 1 : 0
             return false
         }
@@ -160,16 +185,14 @@ class IllustratorApp {
                 fc.infoWindowMode = 3
             }
         }
-        // 非Beta では一致なし（mode 2 or 3）でも Beta/Prerelease に一致するものがあれば
+        // 非Beta では一致なし（mode 2 or 3）でも Beta 扱いの版（正規版以外）に一致するものがあれば
         // バルーンを消して通知ウィンドウだけ表示（Beta は常に通知ウィンドウ経由で開く）
         if fc.infoWindowMode == 2 || fc.infoWindowMode == 3 {
             let hasBetaMatch = appClassALLIncludeBeta.contains { ac in
                 let appParts = ac.version.components(separatedBy: ".")
                 let appMajor = appParts.first ?? ""
                 let appMinor = appParts.count >= 2 ? appParts[1] : ""
-                let folder = ac.appURL.deletingLastPathComponent().lastPathComponent
-                let isBeta = folder.contains("Beta") || folder.contains("Prerelease")
-                return isBeta && appMajor == myMajor && appMinor == myMinor
+                return ac.isBeta && appMajor == myMajor && appMinor == myMinor
             }
             if hasBetaMatch { fc.infoWindowMode = 0 }
         }
@@ -256,9 +279,13 @@ class IllustratorApp {
         appClassALL.max { $0.versionDouble < $1.versionDouble }
     }
 
-    /// Beta/Prerelease を含む中で最上位バージョン（ビルド番号含む比較）
+    /// Beta を含む中で最上位バージョン（ビルド番号含む比較）。同じバージョンなら正規版を優先する
+    /// （オフ時の関連付け先が Debug 版や複製にならないように）
     func getMaximumVerAppClassIncludeBeta() -> IllustratorAppClass? {
-        appClassALLIncludeBeta.max { $0.versionDouble < $1.versionDouble }
+        appClassALLIncludeBeta.max { a, b in
+            if a.versionDouble != b.versionDouble { return a.versionDouble < b.versionDouble }
+            return a.isBeta && !b.isBeta
+        }
     }
 
     func getMinimumVerAppClass() -> IllustratorAppClass? {
