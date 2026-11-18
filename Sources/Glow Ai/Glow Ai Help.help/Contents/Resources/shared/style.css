@@ -40,6 +40,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    text-autospace: normal;  /* 和欧間を自動で空ける（HTML には欧文スペースを入れない） */
     font-size: 14px;
     line-height: 1.7;
     color: var(--text);
@@ -117,6 +118,11 @@ a:hover {
     margin-top: 1px;
 }
 
+/* 下位ページ（親ページの直後に字下げして並べる） */
+.toc li.sub a {
+    padding-left: 24px;
+}
+
 /* ── Note / Warning boxes ── */
 .note, .warning {
     border-left: 3px solid;
@@ -170,6 +176,22 @@ kbd {
     border-radius: 4px;
     padding: 1px 6px;
     white-space: nowrap;
+}
+
+/* ── Button icon (SF Symbols) ──
+   SF Symbols は利用者の Mac にフォントとして入っていない＝文字では出せないため、
+   アプリと同じ NSImage（pointSize 32・アプリと同じ weight）から黒の PNG に書き出して
+   shared/icons/<シンボル名>.png に置く。ダークモードは反転して白にする。
+   アプリ側のアイコンを変えたら PNG も書き出し直すこと。 */
+img.icon {
+    height: 1.1em;
+    vertical-align: -0.18em;
+}
+
+@media (prefers-color-scheme: dark) {
+    img.icon {
+        filter: invert(1);
+    }
 }
 
 /* ── Bullet list ── */

@@ -21,28 +21,40 @@
   To show the Notification Window just once without changing this setting, hold <kbd>⌘</kbd> (Command) while opening the file.
 </div>
 
-<h2>Associate file types on launch (.ai / .ait / .eps)</h2>
-<p>Default: On</p>
-<p><strong>When on:</strong> Every time Glow Ai launches, it re-registers itself as the default app for .ai / .ait / .eps files. Double-clicking those files will launch Glow Ai. If another app changes the association, Glow Ai automatically reclaims it on the next launch.</p>
-<p><strong>When turned off:</strong> At the moment you turn it off, the association is changed to the highest installed version of Illustrator (including Beta and Prerelease). Double-clicking those files will launch that Illustrator directly, bypassing Glow Ai. Use this setting when you want to restore the normal Illustrator file association without going through Glow Ai.</p>
-
-<div class="note">
-  <strong>Tip</strong>
-  If double-clicking no longer launches Glow Ai, check whether this option has been turned off. Turning it back on immediately re-associates the file types with Glow Ai.
-</div>
-
-<h2>Do not notify about file icon import</h2>
-<p>When on, the completion message shown after importing Illustrator file icons on launch is suppressed. The icon import itself still takes place as usual.</p>
-<p>The guidance shown when an import cannot be completed (such as “Please move Glow Ai to the Applications folder”) is displayed regardless of this setting.</p>
-<p>Default: off (notify on import)</p>
-
 <h2>Do not detect EPS compatibility version (v9 and later)</h2>
 <p>When enabled, Glow Ai skips the compatibility version detection step when processing EPS files. Compatibility version detection can take longer for larger EPS files.</p>
 <p>Default: On (compatibility version is not detected)</p>
 
-<h2>Limit read size</h2>
-<p>Sets a maximum read size using the slider. When enabled, Glow Ai stops reading after the specified number of megabytes.</p>
-<p>This is primarily intended to stop EPS compatibility version detection from taking too long on large files.</p>
-<p>Default: On (5 MB limit)</p>
+<h2>Limit read time</h2>
+<p>Sets a time limit for reading a file, from 1 to 10 seconds, using the slider. When enabled, Glow Ai stops reading once the specified number of seconds has passed since it started reading the file.</p>
+<p>This is primarily intended to stop EPS compatibility version detection from taking too long on large files. When reading is stopped, the Notification Window shows “Time limit reached”.</p>
+<p>Default: On (5 seconds)</p>
+
+<h2 id="association">File association (.ai / .ait / .eps)</h2>
+<p>Choose the app that opens .ai / .ait / .eps files when you double-click them — Glow Ai or Adobe Illustrator — and click <strong>Associate</strong>. Illustrator here means the latest installed release version (Beta and Prerelease are excluded).</p>
+<p>The app that is currently associated is marked “(current)”.</p>
+<p>On macOS Tahoe 26.3 and earlier, clicking <strong>Associate</strong> changes the association right away.</p>
+<p>On macOS Tahoe 26.4 and later, when you click <strong>Associate</strong>, macOS asks you to confirm the change for each document type.</p>
+<ul>
+  <li>If you choose to change to the selected app, the association changes.</li>
+  <li>If you choose to keep the current app, the association does not change, and the remaining document types are not asked about.</li>
+</ul>
+<p>If the association does not change even though you did not choose to keep the current app, Glow Ai shows how to associate the files in the Finder (see <a href="02_howto.html#association">Associating Files for Double-Clicking</a>).</p>
+<p>Glow Ai never changes file associations on its own.</p>
+
+<h2 id="icons">File icons</h2>
+<p>Click <strong>Import Icons</strong> to copy the .ai / .ait / .eps icons from the latest installed release version of Illustrator into Glow Ai. Files associated with Glow Ai then also show the latest Illustrator icons.</p>
+<p>When the icons in Glow Ai are the same as that Illustrator’s icons, “The icons in Glow Ai are up to date.” is shown. After you update Illustrator, import the icons again. Glow Ai does not import icons automatically on launch.</p>
+<p><strong>Import Icons</strong> is unavailable, and the reason is shown, in these cases:</p>
+<ul>
+  <li>You are using a non-administrator account and Glow Ai was installed by an administrator. Importing from an administrator account applies the icons for every account on that Mac.</li>
+  <li>Glow Ai is running directly from where it was unzipped, such as the Downloads folder. Move Glow Ai to the Applications folder and open it again.</li>
+  <li>The Illustrator icons cannot be found.</li>
+</ul>
+
+<div class="note">
+  <strong>Note</strong>
+  When <strong>Show icon preview</strong> is on in the Finder’s view options, file icons show a preview of the file’s contents. Turn off <strong>Show icon preview</strong> to show the Illustrator file icons.
+</div>
 </body>
 </html>

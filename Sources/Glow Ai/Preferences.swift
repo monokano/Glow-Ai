@@ -26,7 +26,7 @@ class Preferences {
     /// 通知ウインドウの「終了」ボタンをデフォルトにする
     var activateTheQuitButton: Bool = false
 
-    /// 読込サイズ制限（タイムアウト）を使う
+    /// 読み込み時間の制限（タイムアウト）を使う
     var useTimeLimit: Bool = true
 
     /// 制限時間（秒）1〜10
@@ -35,23 +35,11 @@ class Preferences {
     /// EPSの互換バージョンを検出しない
     var isNotDetectEPSCompatibleVer: Bool = true
 
-    /// 起動時にファイル関連付けを自動登録する（.ai / .ait / .eps）
-    var autoClaimFileAssociations: Bool = true
-
-    /// ファイルアイコン取込完了を通知しない（完了・失敗ダイアログを抑制）
-    var doNotNotifyIconImport: Bool = false
-
     /// 通知ウインドウの幅
     var infoWindowWidth: Int = 450
 
     /// 詳細情報シートの幅（最小550）
     var moreInfoSheetWidth: Int = 550
-
-    /// アイコン更新判定用（非リリースバージョン番号）
-    var nonReleaseVersion: Int = 0
-
-    /// 最後にコピーしたアイコンの Illustratorバージョン
-    var appIconVersion: String = ""
 
     // MARK: - Keys
 
@@ -63,12 +51,8 @@ class Preferences {
         case useTimeLimit
         case timeLimit
         case isNotDetectEPSCompatibleVer
-        case autoClaimFileAssociations
-        case doNotNotifyIconImport
         case infoWindowWidth
         case moreInfoSheetWidth
-        case nonReleaseVersion
-        case appIconVersion
     }
 
     // MARK: - Load / Save
@@ -82,12 +66,8 @@ class Preferences {
         useTimeLimit                 = d.object(forKey: Key.useTimeLimit.rawValue)                 as? Bool ?? true
         timeLimit                    = d.object(forKey: Key.timeLimit.rawValue)                    as? Int  ?? 5
         isNotDetectEPSCompatibleVer  = d.object(forKey: Key.isNotDetectEPSCompatibleVer.rawValue)  as? Bool ?? true
-        autoClaimFileAssociations    = d.object(forKey: Key.autoClaimFileAssociations.rawValue)    as? Bool ?? true
-        doNotNotifyIconImport        = d.object(forKey: Key.doNotNotifyIconImport.rawValue)        as? Bool ?? false
         infoWindowWidth              = d.object(forKey: Key.infoWindowWidth.rawValue)              as? Int  ?? 450
         moreInfoSheetWidth           = d.object(forKey: Key.moreInfoSheetWidth.rawValue)           as? Int  ?? 550
-        nonReleaseVersion            = d.object(forKey: Key.nonReleaseVersion.rawValue)            as? Int  ?? 0
-        appIconVersion               = d.string(forKey: Key.appIconVersion.rawValue)               ?? ""
     }
 
     func save() {
@@ -99,11 +79,7 @@ class Preferences {
         d.set(useTimeLimit,                 forKey: Key.useTimeLimit.rawValue)
         d.set(timeLimit,                    forKey: Key.timeLimit.rawValue)
         d.set(isNotDetectEPSCompatibleVer,  forKey: Key.isNotDetectEPSCompatibleVer.rawValue)
-        d.set(autoClaimFileAssociations,    forKey: Key.autoClaimFileAssociations.rawValue)
-        d.set(doNotNotifyIconImport,        forKey: Key.doNotNotifyIconImport.rawValue)
         d.set(infoWindowWidth,              forKey: Key.infoWindowWidth.rawValue)
         d.set(moreInfoSheetWidth,           forKey: Key.moreInfoSheetWidth.rawValue)
-        d.set(nonReleaseVersion,            forKey: Key.nonReleaseVersion.rawValue)
-        d.set(appIconVersion,               forKey: Key.appIconVersion.rawValue)
     }
 }

@@ -11,6 +11,28 @@
         }
       }
     },
+    "%@ (current)" : {
+      "comment" : "Preferences: radio button title of the app currently associated",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@（現在）"
+          }
+        }
+      }
+    },
+    "Adobe Illustrator (not installed)" : {
+      "comment" : "Preferences: radio button when no release Illustrator is installed",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adobe Illustrator（見つかりません）"
+          }
+        }
+      }
+    },
     "Adobe Illustrator format (.ai)" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -38,6 +60,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "上位バージョンで開くのを許可する"
+          }
+        }
+      }
+    },
+    "Already associated with %@." : {
+      "comment" : "Preferences: status, %@ = app name",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すでに%@に関連付けられています。"
           }
         }
       }
@@ -79,12 +112,35 @@
         }
       }
     },
-    "Associate file types on launch (.ai / .ait / .eps)" : {
+    "Associate" : {
+      "comment" : "Preferences: button that applies the file association",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "起動時に関連付けをする（.ai / .ait / .eps）"
+            "value" : "関連付ける"
+          }
+        }
+      }
+    },
+    "Associated with %@." : {
+      "comment" : "Preferences: status, %@ = app name",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@に関連付けました。"
+          }
+        }
+      }
+    },
+    "Back" : {
+      "comment" : "Help window toolbar: go back (accessibility name)",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "戻る"
           }
         }
       }
@@ -99,12 +155,12 @@
         }
       }
     },
-    "Change Log" : {
+    "Choose the app that opens when you double-click a file." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "更新履歴"
+            "value" : "ダブルクリックしたときに開くアプリを選びます。"
           }
         }
       }
@@ -156,12 +212,34 @@
         }
       }
     },
+    "Continue Anyway" : {
+      "comment" : "Translocation alert button",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このまま続ける"
+          }
+        }
+      }
+    },
     "Continuing will launch multiple Illustrator instances." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "このまま続行すると、複数の Illustrator が起動する状態になります。"
+          }
+        }
+      }
+    },
+    "Copies the .ai, .ait, and .eps icons from %@ into Glow Ai, so files associated with Glow Ai also show the latest Illustrator icons." : {
+      "comment" : "Preferences: %@ = Illustrator name, e.g. Adobe Illustrator 2026",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@の.ai／.ait／.epsのアイコンをGlow Aiに取り込みます。Glow Aiに関連付けたファイルのアイコンをIllustratorの最新アイコンにするためです。"
           }
         }
       }
@@ -196,6 +274,17 @@
         }
       }
     },
+    "Detection" : {
+      "comment" : "Preferences window: section header for detection options",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検出"
+          }
+        }
+      }
+    },
     "Do not detect EPS compatible version (v9+)" : {
       "localizations" : {
         "ja" : {
@@ -216,16 +305,6 @@
         }
       }
     },
-    "Do not notify about file icon import" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ファイルアイコン取り込みを通知しない"
-          }
-        }
-      }
-    },
     "EPS compat. detection OFF" : {
       "localizations" : {
         "ja" : {
@@ -236,95 +315,13 @@
         }
       }
     },
-    "Filename" : {
+    "EPS file - %@ (.eps)" : {
+      "extractionState" : "manual",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ファイル名"
-          }
-        }
-      }
-    },
-    "GitHub Releases" : {
-
-    },
-    "Glow Ai - Notification" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glow Ai - 通知"
-          }
-        }
-      }
-    },
-    "Glow Ai cannot write to its current location. Move it to the Applications folder (or the Applications folder in your home folder) and open it again." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glow Ai は現在の場所に書き込めません。「アプリケーション」フォルダ（または、ホームフォルダ内の「アプリケーション」フォルダ）へ移動してから、もう一度開いてください。"
-          }
-        }
-      }
-    },
-    "Glow Ai could not update its file icons" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glow Ai はファイルアイコンを更新できませんでした"
-          }
-        }
-      }
-    },
-    "Glow Ai Help" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glow Ai ヘルプ"
-          }
-        }
-      }
-    },
-    "Glow Ai is running from a temporary, read-only location, so it cannot update its file icons. Quit Glow Ai, move it to the Applications folder using the Finder, and open it again." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glow Ai が一時的な読み取り専用の場所から起動しているため、ファイルアイコンを更新できません。Glow Ai を終了し、Finder で「アプリケーション」フォルダへ移動してから、もう一度開いてください。"
-          }
-        }
-      }
-    },
-    "Glow Ai Preferences" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glow Ai 設定"
-          }
-        }
-      }
-    },
-    "Icon files imported from Illustrator %@" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Illustrator %@ からアイコンファイルを取り込みました"
-          }
-        }
-      }
-    },
-    "Ignore warning" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "無視して開く"
+            "value" : "EPS 形式\n- %@ (.eps)"
           }
         }
       }
@@ -340,24 +337,139 @@
         }
       }
     },
-    "Unknown producer" : {
-      "extractionState" : "manual",
+    "File association (.ai / .ait / .eps)" : {
+      "comment" : "Preferences: heading of file association section",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "生成元不明"
+            "value" : "ファイルの関連付け（.ai／.ait／.eps）"
           }
         }
       }
     },
-    "EPS file - %@ (.eps)" : {
-      "extractionState" : "manual",
+    "File icons" : {
+      "comment" : "Preferences: heading of icon import section",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "EPS 形式\n- %@ (.eps)"
+            "value" : "ファイルアイコン"
+          }
+        }
+      }
+    },
+    "Filename" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイル名"
+          }
+        }
+      }
+    },
+    "For security, macOS runs apps obtained from the internet from a copy in a temporary location until you move them in the Finder." : {
+      "comment" : "Translocation alert, 2nd paragraph",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOSは安全のため、インターネットから入手したアプリをFinderで移動するまでは、元の場所ではなく一時的な場所に置いたコピーから起動します。"
+          }
+        }
+      }
+    },
+    "Forward" : {
+      "comment" : "Help window toolbar: go forward (accessibility name)",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "進む"
+          }
+        }
+      }
+    },
+    "Glow Ai - Notification" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Ai - 通知"
+          }
+        }
+      }
+    },
+    "Glow Ai can't be changed because it's owned by the system." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Aiがシステムの所有になっているため、取り込めません。"
+          }
+        }
+      }
+    },
+    "Glow Ai Help" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Ai ヘルプ"
+          }
+        }
+      }
+    },
+    "Glow Ai is in the Applications folder, but it was placed there without being moved in the Finder, for example by unzipping it there. Quit Glow Ai, move it to the Desktop in the Finder, move it back to the Applications folder, and then open it again." : {
+      "comment" : "Translocation alert, 3rd paragraph (original location is inside the Applications folder)",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Aiはアプリケーションフォルダにありますが、そこでZIPを展開した場合など、Finderで移動せずに置かれています。Glow Aiを終了し、Finderでいったんデスクトップへ移動してからアプリケーションフォルダへ戻し、もう一度開いてください。"
+          }
+        }
+      }
+    },
+    "Glow Ai is running from a temporary location because it was opened right after being downloaded." : {
+      "comment" : "Translocation alert, 1st paragraph",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダウンロードした直後のため、Glow Aiは一時的な場所から起動しています。"
+          }
+        }
+      }
+    },
+    "Glow Ai Preferences" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Ai 設定"
+          }
+        }
+      }
+    },
+    "Help" : {
+      "comment" : "Dock menu item: open the help window",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ヘルプ"
+          }
+        }
+      }
+    },
+    "Ignore warning" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無視して開く"
           }
         }
       }
@@ -380,6 +492,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Illustrator Template 形式 (.ait)"
+          }
+        }
+      }
+    },
+    "Import Icons" : {
+      "comment" : "Preferences: button that copies document icons from Illustrator",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アイコンを取り込む"
+          }
+        }
+      }
+    },
+    "Imported the icons from %@." : {
+      "comment" : "Preferences: %@ = Illustrator name",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@のアイコンを取り込みました。"
           }
         }
       }
@@ -425,12 +559,22 @@
         }
       }
     },
-    "Limit read size (%lld sec)" : {
+    "Limit read time (%lld sec)" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "読込サイズを制限する（%lld 秒）"
+            "value" : "読み込み時間を制限する（%lld秒）"
+          }
+        }
+      }
+    },
+    "macOS security may prevent this change. In the Finder, select a .ai, .ait, or .eps file, choose Get Info, choose the app in \"Open with\", and click \"Change All…\"." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOSのセキュリティにより変更されないことがあります。Finderで.ai／.ait／.epsファイルを選んで「情報を見る」を開き、「このアプリケーションで開く」でアプリを選んで「すべてを変更」をクリックしてください。"
           }
         }
       }
@@ -441,6 +585,48 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "詳細情報"
+          }
+        }
+      }
+    },
+    "Move Glow Ai again in the Finder" : {
+      "comment" : "Translocation alert title (original location is inside the Applications folder)",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow AiをFinderで移動し直してください"
+          }
+        }
+      }
+    },
+    "Move Glow Ai to the Applications folder" : {
+      "comment" : "Translocation alert title",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Aiをアプリケーションフォルダへ移動してください"
+          }
+        }
+      }
+    },
+    "Move Glow Ai to the Applications folder, then open it again." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Aiをアプリケーションフォルダに移動して、開き直してください。"
+          }
+        }
+      }
+    },
+    "No Adobe Illustrator icons were found." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adobe Illustratorのアイコンが見つかりません。"
           }
         }
       }
@@ -500,6 +686,17 @@
         }
       }
     },
+    "Only some file types were associated with %@." : {
+      "comment" : "Preferences: status, %@ = app name",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一部の種類だけ%@に関連付けました。"
+          }
+        }
+      }
+    },
     "Open" : {
       "localizations" : {
         "ja" : {
@@ -526,16 +723,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開く…"
-          }
-        }
-      }
-    },
-    "Part of Glow Ai is owned by the administrator, so it cannot update its file icons. Move Glow Ai to the Trash, download the latest version, and install it again." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glow Ai の一部が管理者（root）の所有になっているため、ファイルアイコンを更新できません。Glow Ai をゴミ箱に入れ、最新版をダウンロードして入れ直してください。"
           }
         }
       }
@@ -645,26 +832,6 @@
         }
       }
     },
-    "Please move Glow Ai to the Applications folder" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glow Ai を「アプリケーション」フォルダへ移動してください"
-          }
-        }
-      }
-    },
-    "Please reinstall Glow Ai" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glow Ai を入れ直してください"
-          }
-        }
-      }
-    },
     "Preferences…" : {
       "localizations" : {
         "ja" : {
@@ -691,6 +858,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Glow Ai を終了する"
+          }
+        }
+      }
+    },
+    "Quit Glow Ai, move it to the Applications folder in the Finder, and then open it again." : {
+      "comment" : "Translocation alert, 3rd paragraph",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Aiを終了し、Finderでアプリケーションフォルダへ移動してから、もう一度開いてください。"
+          }
+        }
+      }
+    },
+    "Quit Glow Ai, move it to the Applications folder in the Finder, and then open it again. If it's already in the Applications folder, move it to the Desktop and back again in the Finder." : {
+      "comment" : "Translocation alert, 3rd paragraph (original location unknown)",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Aiを終了し、Finderでアプリケーションフォルダへ移動してから、もう一度開いてください。すでにアプリケーションフォルダにある場合は、Finderでいったんデスクトップへ移動してから戻してください。"
           }
         }
       }
@@ -722,6 +911,47 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "システム要件"
+          }
+        }
+      }
+    },
+    "The file association was kept as it is." : {
+      "comment" : "Preferences: status when the user chose to keep the current app in the macOS confirmation",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "関連付けは変更していません。"
+          }
+        }
+      }
+    },
+    "The file association was not changed." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルの関連付けが変更されませんでした。"
+          }
+        }
+      }
+    },
+    "The icons couldn't be imported." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アイコンを取り込めませんでした。"
+          }
+        }
+      }
+    },
+    "The icons in Glow Ai are up to date." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glow Aiの中にあるアイコンは最新です。"
           }
         }
       }
@@ -770,12 +1000,33 @@
         }
       }
     },
+    "To import icons, log in with an administrator account." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取り込むには、管理者のアカウントでログインしてください。"
+          }
+        }
+      }
+    },
     "Unknown compat. version" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "互換バージョン不明"
+          }
+        }
+      }
+    },
+    "Unknown producer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生成元不明"
           }
         }
       }
@@ -823,6 +1074,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "バージョン情報を\n検出できません"
+          }
+        }
+      }
+    },
+    "Waiting for confirmation…" : {
+      "comment" : "Preferences: status while macOS shows confirmation dialogs",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "確認を待っています…"
+          }
+        }
+      }
+    },
+    "When Opening Files" : {
+      "comment" : "Preferences window: section header for the option about opening files",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルを開くとき"
           }
         }
       }

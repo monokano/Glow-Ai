@@ -16,16 +16,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var countDrop: Int = 0
     /// 初回ドロップ時の cmd キー状態（application(_:open:) 呼び出し直後にキャプチャ）
     private var cmdKeyDownAtDrop: Bool = false
-    /// 起動時ダイアログ（アイコン取込・危険バージョン警告）が終わったか
-    private var iconImportDone: Bool = false
-    /// 起動時ダイアログの完了を待って runStart() を実行するための保留フラグ
+    /// applicationDidFinishLaunching が終わったか（Release ビルドでは application(_:open:) が先に呼ばれるため）
+    private var launchFinished: Bool = false
+    /// 起動処理の完了を待って runStart() を実行するための保留フラグ
     private var pendingRunStart: Bool = false
     /// 現在表示中の InfoWindow コントローラ
     var infoWindowController: InfoWindowController?
     /// 環境設定ウインドウ
     private var preferencesWindowController: PreferencesWindowController?
-    /// 更新履歴ウインドウ
-    private var changeLogWindowController: ChangeLogWindowController?
     private var helpWindowController: HelpWindowController?
 
     // MARK: - applicationWillFinishLaunching
@@ -58,15 +56,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Dock メニューを手動登録（@NSApplicationDelegateAdaptor 経由だとフォワードされないため）
         NSApp.delegate = self
 
-        // ファイル関連付けを明示的に再登録
-        if Preferences.shared.autoClaimFileAssociations {
-            // ON：Glow Ai 自身を関連付け
-            claimFileAssociations()
-        } else {
-            // OFF：インストール済みの最上位 Illustrator（Beta含む）を関連付け
-            claimFileAssociationsToTopIllustrator()
-        }
-
         // 不要なメニュー（表示・ウインドウ）を削除
         DispatchQueue.main.async {
             let removes = ["表示", "View", "ウインドウ", "Window"]
@@ -75,78 +64,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 .forEach { NSApp.mainMenu?.removeItem($0) }
         }
 
-        // 起動時ダイアログ（アイコン取込）を真っ先に表示するため、
-        // 完了まで runStart()（通知ウィンドウ処理）を保留する。
-        importIconsIfNeeded { [weak self] in
-            guard let self else { return }
-            self.iconImportDone = true
-            if self.pendingRunStart {
-                self.pendingRunStart = false
-                self.runStart()
+        // 隔離起動（App Translocation）中なら、Finder での移動を案内する。
+        // 移動すれば出なくなるので毎回出す。「終了」ならドロップされたファイルも開かずに終了する。
+        if AppTranslocation.isTranslocated(Bundle.main.bundleURL) {
+            if !showTranslocationAlert() {
+                appQuit()
+                return
             }
         }
-    }
 
-    // MARK: - アイコン取込
-
-    /// アイコン取込が必要なら実行し、完了ダイアログ（抑制設定でない場合）を表示してから
-    /// completion を呼ぶ。取込不要・中止の場合も必ず completion を呼ぶ。
-    private func importIconsIfNeeded(completion: @escaping () -> Void) {
-        let prefs = Preferences.shared
-        guard !IllustratorApp.shared.appClassALL.isEmpty else { completion(); return }
-
-        let bundleBuild = Int(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0") ?? 0
-
-        let needImport: Bool
-        if prefs.nonReleaseVersion != bundleBuild {
-            prefs.nonReleaseVersion = bundleBuild
-            prefs.save()
-            needImport = true
-        } else if let latest = IllustratorApp.shared.getMaximumVerAppClass(),
-                  latest.version != prefs.appIconVersion {
-            needImport = true
-        } else {
-            needImport = false
-        }
-
-        guard needImport else { completion(); return }
-
-        IllustratorApp.shared.getIconFile(onSuccess: { [weak self] version in
-            self?.showIconImportedAlert(version: version)
-        }, onProblem: { [weak self] problem in
-            self?.showIconImportProblemAlert(problem)
-        }, onComplete: {
-            completion()
-        })
-    }
-
-    // MARK: - ファイル関連付け再登録
-
-    func claimFileAssociations() {
-        let appURL = Bundle.main.bundleURL
-        let utiStrings = [
-            "com.adobe.illustrator.ai-image",
-            "com.adobe.illustrator.ait-template",
-            "com.adobe.encapsulated-postscript"
-        ]
-        for utiString in utiStrings {
-            guard let utType = UTType(utiString) else { continue }
-            NSWorkspace.shared.setDefaultApplication(at: appURL, toOpen: utType) { _ in }
-        }
-    }
-
-    /// 「起動時に関連付けをする」がOFFの場合：
-    /// インストール済み最上位バージョンのIllustrator（Beta/Prerelease含む）に関連付けする
-    func claimFileAssociationsToTopIllustrator() {
-        guard let top = IllustratorApp.shared.getMaximumVerAppClassIncludeBeta() else { return }
-        let utiStrings = [
-            "com.adobe.illustrator.ai-image",
-            "com.adobe.illustrator.ait-template",
-            "com.adobe.encapsulated-postscript"
-        ]
-        for utiString in utiStrings {
-            guard let utType = UTType(utiString) else { continue }
-            NSWorkspace.shared.setDefaultApplication(at: top.appURL, toOpen: utType) { _ in }
+        // アイコン取込は起動時には行わない（環境設定のボタンから。HANDOFF ステップ7）
+        launchFinished = true
+        if pendingRunStart {
+            pendingRunStart = false
+            runStart()
         }
     }
 
@@ -163,18 +94,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         prefsItem.target = self
         menu.addItem(prefsItem)
 
-        let changeLogItem = NSMenuItem(
-            title: String(localized: "Change Log"),
-            action: #selector(openChangeLog),
+        // ヘルプ（共通仕様＝App-共有資料/ヘルプ仕様.md §4.2）。ウインドウのタイトルはヘルプメニューから開いたときと同じ
+        let helpItem = NSMenuItem(
+            title: String(localized: "Help"),
+            action: #selector(dockHelpClicked(_:)),
             keyEquivalent: ""
         )
-        changeLogItem.target = self
-        menu.addItem(changeLogItem)
+        helpItem.target = self
+        menu.addItem(helpItem)
 
         return menu
     }
 
-    // MARK: - メニューバー「環境設定」／「更新履歴」
+    @objc private func dockHelpClicked(_ sender: Any?) {
+        openHelp()
+    }
+
+    // MARK: - メニューバー「環境設定」／「ヘルプ」
 
     @objc func openPreferences() {
         if preferencesWindowController == nil {
@@ -183,13 +119,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         preferencesWindowController?.showWindow(nil)
         preferencesWindowController?.window?.makeKeyAndOrderFront(nil)
-    }
-
-    @objc func openChangeLog() {
-        if changeLogWindowController == nil {
-            changeLogWindowController = ChangeLogWindowController()
-        }
-        changeLogWindowController?.show()
     }
 
     func openHelp() {
@@ -224,9 +153,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 初回ドロップ時のみ RunStart を起動する
         // 2回目以降は dropItems に追加済みなので RunStart 内で処理される
-        // ただし起動時ダイアログを先に出すため、未完了なら保留する。
+        // ただし起動処理が終わっていなければ保留する。
         if countDrop == 1 {
-            if iconImportDone {
+            if launchFinished {
                 runStart()
             } else {
                 pendingRunStart = true
@@ -340,36 +269,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Helpers
 
-    private func showIconImportedAlert(version: String) {
-        guard !Preferences.shared.doNotNotifyIconImport else { return }
-        let name = FileInfo.versionName(version)
-        let alert = NSAlert()
-        alert.messageText = String(format: String(localized: "Icon files imported from Illustrator %@"), name)
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
-        NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
-    }
+    // MARK: - 隔離起動の案内
 
-    /// アイコンを自分のバンドルに書き込めなかったとき、原因に応じた是正案内を表示する。
-    /// 管理者パスワードは要求しない（旧来の管理者コピーを廃止した代替）。
-    private func showIconImportProblemAlert(_ problem: IconImportProblem) {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        switch problem {
-        case .translocated:
-            alert.messageText = String(localized: "Please move Glow Ai to the Applications folder")
-            alert.informativeText = String(localized: "Glow Ai is running from a temporary, read-only location, so it cannot update its file icons. Quit Glow Ai, move it to the Applications folder using the Finder, and open it again.")
-        case .rootOwned:
-            alert.messageText = String(localized: "Please reinstall Glow Ai")
-            alert.informativeText = String(localized: "Part of Glow Ai is owned by the administrator, so it cannot update its file icons. Move Glow Ai to the Trash, download the latest version, and install it again.")
-        case .notWritable:
-            alert.messageText = String(localized: "Glow Ai could not update its file icons")
-            alert.informativeText = String(localized: "Glow Ai cannot write to its current location. Move it to the Applications folder (or the Applications folder in your home folder) and open it again.")
+    /// 隔離起動の案内を出す。「このまま続ける」なら true、「終了」なら false。
+    /// 元の場所がアプリケーションフォルダの中（そこで ZIP を展開した場合など）なら、
+    /// 「いったん外へ出して戻す」案内にする。元の場所が分からなければ両方に効く文言にする。
+    private func showTranslocationAlert() -> Bool {
+        let original = AppTranslocation.originalURL(of: Bundle.main.bundleURL)
+        let title: String
+        let action: String
+        switch original.map({ AppTranslocation.isInApplicationsFolder($0) }) {
+        case true?:
+            title = String(localized: "Move Glow Ai again in the Finder")
+            action = String(localized: "Glow Ai is in the Applications folder, but it was placed there without being moved in the Finder, for example by unzipping it there. Quit Glow Ai, move it to the Desktop in the Finder, move it back to the Applications folder, and then open it again.")
+        case false?:
+            title = String(localized: "Move Glow Ai to the Applications folder")
+            action = String(localized: "Quit Glow Ai, move it to the Applications folder in the Finder, and then open it again.")
+        case nil:
+            title = String(localized: "Move Glow Ai to the Applications folder")
+            action = String(localized: "Quit Glow Ai, move it to the Applications folder in the Finder, and then open it again. If it's already in the Applications folder, move it to the Desktop and back again in the Finder.")
         }
-        alert.addButton(withTitle: "OK")
+
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = title
+        alert.informativeText = [
+            String(localized: "Glow Ai is running from a temporary location because it was opened right after being downloaded."),
+            String(localized: "For security, macOS runs apps obtained from the internet from a copy in a temporary location until you move them in the Finder."),
+            action,
+        ].joined(separator: "\n\n")
+        alert.addButton(withTitle: String(localized: "Quit"))             // 既定（Return）
+        let continueButton = alert.addButton(withTitle: String(localized: "Continue Anyway"))
+        continueButton.keyEquivalent = "\u{1b}"                           // Esc
         NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
+        return alert.runModal() == .alertSecondButtonReturn
     }
 
     private func showAlertAndQuit(message: String, info: String) {

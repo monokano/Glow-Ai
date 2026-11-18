@@ -57,7 +57,7 @@ class PhotoshopApp {
                     ac.version = String(ac.version[..<range.lowerBound])
                 }
                 ac.isBooted = isAppBooted(appURL: child)
-                ac.icon = NSWorkspace.shared.icon(forFile: child.path)
+                ac.icon = NSImage.appIcon(at: child)
                             .resized(to: NSSize(width: 18, height: 18))
 
                 appClassALL.append(ac)

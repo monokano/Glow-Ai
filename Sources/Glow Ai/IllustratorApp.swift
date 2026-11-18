@@ -4,7 +4,7 @@ import Foundation
 
 // MARK: - IconImportProblem（アイコン取込が失敗した原因）
 
-/// 自分のバンドルにアイコンを書き込めなかった理由。AppDelegate 側で原因別の案内に使う。
+/// 自分のバンドルにアイコンを書き込めない理由。環境設定で、ボタンを押せない理由の表示に使う。
 enum IconImportProblem {
     /// App Translocation（隔離属性付きで読み取り専用のランダムパスから起動）
     case translocated
@@ -12,6 +12,55 @@ enum IconImportProblem {
     case rootOwned
     /// その他、設置場所に書き込めない
     case notWritable
+}
+
+// MARK: - AppTranslocation（隔離起動の判定）
+
+/// App Translocation（隔離属性付きのアプリを Finder で移動せずに起動したとき、
+/// 読み取り専用の一時的な場所から実行される macOS の仕組み）の判定。
+/// 共通資料 App-共有資料/AppTranslocation対策.md を参照。
+enum AppTranslocation {
+    private static let securityHandle =
+        dlopen("/System/Library/Frameworks/Security.framework/Security", RTLD_LAZY)
+
+    /// 隔離起動しているか。
+    /// `SecTranslocateIsTranslocatedURL` を dlsym で呼び、取得できなければパスで判定する。
+    static func isTranslocated(_ url: URL) -> Bool {
+        typealias Fn = @convention(c) (CFURL, UnsafeMutablePointer<Bool>, UnsafeMutablePointer<Unmanaged<CFError>?>?) -> DarwinBoolean
+        if let handle = securityHandle,
+           let sym = dlsym(handle, "SecTranslocateIsTranslocatedURL") {
+            let fn = unsafeBitCast(sym, to: Fn.self)
+            var isTrans = false
+            var err: Unmanaged<CFError>? = nil
+            if fn(url as CFURL, &isTrans, &err).boolValue { return isTrans }
+            err?.release()   // 失敗時に返る CFError を解放（リーク防止）
+        }
+        return url.path.contains("/AppTranslocation/")
+    }
+
+    /// 隔離起動中のアプリの元の場所。
+    /// `SecTranslocateCreateOriginalPathForURL`（公開ヘッダに無い）を dlsym で呼ぶ。取得できなければ nil。
+    static func originalURL(of url: URL) -> URL? {
+        typealias Fn = @convention(c) (CFURL, UnsafeMutablePointer<Unmanaged<CFError>?>?) -> Unmanaged<CFURL>?
+        guard let handle = securityHandle,
+              let sym = dlsym(handle, "SecTranslocateCreateOriginalPathForURL") else { return nil }
+        let fn = unsafeBitCast(sym, to: Fn.self)
+        var err: Unmanaged<CFError>? = nil
+        guard let original = fn(url as CFURL, &err)?.takeRetainedValue() else {
+            err?.release()
+            return nil
+        }
+        return original as URL
+    }
+
+    /// 元の場所がアプリケーションフォルダ（/Applications または ~/Applications）の中か。
+    /// アプリケーションフォルダの中で ZIP を展開した場合などに当たる。
+    static func isInApplicationsFolder(_ url: URL) -> Bool {
+        let appDirs = FileManager.default.urls(for: .applicationDirectory,
+                                               in: [.localDomainMask, .userDomainMask])
+        let path = url.standardizedFileURL.path
+        return appDirs.contains { path.hasPrefix($0.standardizedFileURL.path + "/") }
+    }
 }
 
 // MARK: - AppClass（Illustratorアプリ1本分のデータモデル）
@@ -81,7 +130,7 @@ class IllustratorApp {
             ac.versionDouble = versionToDouble(ac.version)
             ac.isBeta = IllustratorApp.isBetaFolder(entry.lastPathComponent)
             ac.isBooted = isAppBooted(appURL: appBundleURL)
-            ac.icon = NSWorkspace.shared.icon(forFile: appBundleURL.path)
+            ac.icon = NSImage.appIcon(at: appBundleURL)
                         .resized(to: NSSize(width: 18, height: 18))
 
             appClassALLIncludeBeta.append(ac)
@@ -292,84 +341,99 @@ class IllustratorApp {
         appClassALL.min { $0.versionDouble < $1.versionDouble }
     }
 
-    // MARK: - getIconFile
+    // MARK: - アイコン取込（環境設定のボタンから。HANDOFF ステップ7）
 
-    /// onComplete は成功・失敗・中止のいずれの経路でも必ず最後に呼ばれる（後続処理の同期用）。
-    /// onProblem は書き込めなかったときに原因種別を返す（管理者パスワードは要求しない）。
-    func getIconFile(onSuccess: ((String) -> Void)? = nil,
-                     onProblem: ((IconImportProblem) -> Void)? = nil,
-                     onComplete: (() -> Void)? = nil) {
-        guard let latest = getMaximumVerAppClass() else { onComplete?(); return }
+    /// 自分のバンドル内のコピー先（.ai／.ait／.eps）。Info.plist の CFBundleTypeIconFile と同じ名前
+    private static let iconFileNames = ["ai_ai_primary.icns", "ai_cc_ai_pad.icns", "ai_eps.icns"]
+
+    /// 最上位の正規版 Illustrator 内のアイコン（.ai／.ait／.eps の順）。見つからなければ nil
+    func latestIconSources() -> [URL]? {
+        guard let latest = getMaximumVerAppClass() else { return nil }
         let resources = latest.appURL.appendingPathComponent("Contents/Resources")
+        let candidates = [
+            ["ai_ai_primary.icns", "AI_File_Icon.icns"],
+            ["ai_cc_ai_pad.icns", "AI_TemplateFile_Icon.icns"],
+            ["ai_eps.icns", "AI_EPSFile_Icon.icns"],
+        ]
+        var urls: [URL] = []
+        for names in candidates {
+            guard let found = names.map({ resources.appendingPathComponent($0) })
+                    .first(where: { FileManager.default.fileExists(atPath: $0.path) }) else { return nil }
+            urls.append(found)
+        }
+        return urls
+    }
+
+    /// 自分のバンドルにアイコンを書き込めない理由。書き込めるなら nil。
+    /// ボタンを押す前に調べて、押せない状態にするために使う
+    func iconImportProblem() -> IconImportProblem? {
+        guard let myResources = Bundle.main.resourceURL else { return .notWritable }
+        if isTranslocated(Bundle.main.bundleURL) { return .translocated }
+        // 置き換え（削除＋コピー）には Resources フォルダへの書き込み権限が要る
+        if FileManager.default.isWritableFile(atPath: myResources.path) { return nil }
+        let destAI = myResources.appendingPathComponent(Self.iconFileNames[0])
+        if ownerUID(destAI.path) == 0 || ownerUID(myResources.path) == 0 { return .rootOwned }
+        return .notWritable
+    }
+
+    /// 自分のバンドルのアイコンが、最上位の正規版 Illustrator のものと同じか
+    func iconsAreUpToDate() -> Bool {
+        guard let sources = latestIconSources(),
+              let myResources = Bundle.main.resourceURL else { return false }
+        for (src, name) in zip(sources, Self.iconFileNames) {
+            let dest = myResources.appendingPathComponent(name)
+            guard let a = try? Data(contentsOf: src),
+                  let b = try? Data(contentsOf: dest),
+                  a == b else { return false }
+        }
+        return true
+    }
+
+    /// 最上位の正規版 Illustrator のアイコンを自分のバンドルにコピーする（in-process の FileManager のみ。
+    /// 管理者パスワードは要求しない）。成功なら true
+    func importIcons() -> Bool {
+        guard let sources = latestIconSources(),
+              let myResources = Bundle.main.resourceURL else { return false }
         let fm = FileManager.default
-
-        // .ai アイコン
-        var aiIcon = resources.appendingPathComponent("ai_ai_primary.icns")
-        if !fm.fileExists(atPath: aiIcon.path) {
-            aiIcon = resources.appendingPathComponent("AI_File_Icon.icns")
-        }
-        guard fm.fileExists(atPath: aiIcon.path) else { onComplete?(); return }
-
-        // .ait アイコン
-        var aitIcon = resources.appendingPathComponent("ai_cc_ai_pad.icns")
-        if !fm.fileExists(atPath: aitIcon.path) {
-            aitIcon = resources.appendingPathComponent("AI_TemplateFile_Icon.icns")
-        }
-        guard fm.fileExists(atPath: aitIcon.path) else { onComplete?(); return }
-
-        // .eps アイコン
-        var epsIcon = resources.appendingPathComponent("ai_eps.icns")
-        if !fm.fileExists(atPath: epsIcon.path) {
-            epsIcon = resources.appendingPathComponent("AI_EPSFile_Icon.icns")
-        }
-        guard fm.fileExists(atPath: epsIcon.path) else { onComplete?(); return }
-
-        // コピー先（自分のバンドル Resources）
-        guard let myResources = Bundle.main.resourceURL else { onComplete?(); return }
-        let destAI  = myResources.appendingPathComponent("ai_ai_primary.icns")
-        let destAIT = myResources.appendingPathComponent("ai_cc_ai_pad.icns")
-        let destEPS = myResources.appendingPathComponent("ai_eps.icns")
-
+        var changed = false
         do {
-            try? fm.removeItem(at: destAI)
-            try? fm.removeItem(at: destAIT)
-            try? fm.removeItem(at: destEPS)
-            try fm.copyItem(at: aiIcon,  to: destAI)
-            try fm.copyItem(at: aitIcon, to: destAIT)
-            try fm.copyItem(at: epsIcon, to: destEPS)
-            Preferences.shared.appIconVersion = latest.version
-            Preferences.shared.save()
-            onSuccess?(latest.version)
-            onComplete?()
-        } catch {
-            // 書き込み不可 → 管理者パスワードは要求せず、原因を診断して案内する
-            let problem: IconImportProblem
-            if isTranslocated(Bundle.main.bundleURL) {
-                problem = .translocated
-            } else if ownerUID(destAI.path) == 0 || ownerUID(myResources.path) == 0 {
-                problem = .rootOwned
-            } else {
-                problem = .notWritable
+            for (src, name) in zip(sources, Self.iconFileNames) {
+                let dest = myResources.appendingPathComponent(name)
+                // 中身が同じなら触らない（ステップ8：置き換えのたびに Finder のアイコンが白紙になる原因になる）
+                if let a = try? Data(contentsOf: src), let b = try? Data(contentsOf: dest), a == b { continue }
+                // 削除→コピーだと一瞬ファイルが無くなり、Finder がその間に白紙のアイコンを覚えてしまう
+                //（2026-11-08 実機で .ai が真っ白に）。同じフォルダに一時コピーを作り、入れ替える
+                let temp = myResources.appendingPathComponent(".\(name).importing")
+                try? fm.removeItem(at: temp)
+                try fm.copyItem(at: src, to: temp)
+                if fm.fileExists(atPath: dest.path) {
+                    _ = try fm.replaceItemAt(dest, withItemAt: temp)
+                } else {
+                    try fm.moveItem(at: temp, to: dest)
+                }
+                changed = true
             }
-            onProblem?(problem)
-            onComplete?()
+        } catch {
+            return false
         }
+        if changed { Self.refreshIconCache() }
+        return true
+    }
+
+    /// 書類アイコンを変えたことを LaunchServices と Finder に知らせる。
+    /// バンドルの更新日時を変えて再登録すると、書類アイコンが読み直される
+    static func refreshIconCache() {
+        let bundleURL = Bundle.main.bundleURL
+        try? FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: bundleURL.path)
+        LSRegisterURL(bundleURL as CFURL, true)
+        NSWorkspace.shared.noteFileSystemChanged(bundleURL.path)
     }
 
     // MARK: - 設置状態の診断
 
     /// App Translocation（隔離属性付きで読み取り専用のランダムパス）から起動しているか。
-    /// 正規 API `SecTranslocateIsTranslocatedURL` を dlsym で呼び、取得できなければパスで判定する。
     private func isTranslocated(_ url: URL) -> Bool {
-        typealias Fn = @convention(c) (CFURL, UnsafeMutablePointer<Bool>, UnsafeMutablePointer<Unmanaged<CFError>?>?) -> DarwinBoolean
-        if let handle = dlopen("/System/Library/Frameworks/Security.framework/Security", RTLD_LAZY),
-           let sym = dlsym(handle, "SecTranslocateIsTranslocatedURL") {
-            let fn = unsafeBitCast(sym, to: Fn.self)
-            var isTrans = false
-            var err: Unmanaged<CFError>? = nil
-            if fn(url as CFURL, &isTrans, &err).boolValue { return isTrans }
-        }
-        return url.path.contains("/AppTranslocation/")
+        AppTranslocation.isTranslocated(url)
     }
 
     /// 指定パスの所有者 UID（root = 0／取得不可なら nil）
@@ -401,6 +465,20 @@ class IllustratorApp {
 // MARK: - NSImage resize helper（PhotoshopApp.swift からも使用）
 
 extension NSImage {
+    /// アプリのアイコン。Info.plist の CFBundleIconFile の .icns を直接読む。
+    /// macOS 26 以降の NSWorkspace.icon(forFile:) は、Icon Composer 形式のアイコンを持たないアプリ
+    ///（Adobe 製品など）のアイコンを縮めてグレーの角丸の枠に入れて返すため、18pt のリストでは
+    /// グレーの囲みが目立つ（HANDOFF ステップ12）。読めなければ従来どおり NSWorkspace を使う
+    static func appIcon(at appURL: URL) -> NSImage {
+        if let name = Bundle(url: appURL)?.object(forInfoDictionaryKey: "CFBundleIconFile") as? String,
+           !name.isEmpty {
+            let file = name.hasSuffix(".icns") ? name : name + ".icns"
+            let url = appURL.appendingPathComponent("Contents/Resources").appendingPathComponent(file)
+            if let image = NSImage(contentsOf: url) { return image }
+        }
+        return NSWorkspace.shared.icon(forFile: appURL.path)
+    }
+
     func resized(to size: NSSize) -> NSImage {
         let img = NSImage(size: size)
         img.lockFocus()
